@@ -564,8 +564,8 @@ body.sidebar-collapsed .sidebar-toggle-btn { color: var(--accent); border-color:
 }
 
 .subview-btn {
-  padding: 10px 20px;
-  font-size: .85rem;
+  padding: 13px 28px;
+  font-size: 1rem;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -581,9 +581,9 @@ body.sidebar-collapsed .sidebar-toggle-btn { color: var(--accent); border-color:
   content: '';
   position: absolute;
   left: 0; right: 0; bottom: -1px;
-  height: 2px;
+  height: 3px;
   background: transparent;
-  border-radius: 2px;
+  border-radius: 3px;
   transition: background .18s var(--ease);
 }
 
@@ -595,23 +595,36 @@ body.sidebar-collapsed .sidebar-toggle-btn { color: var(--accent); border-color:
 .subview-panel.active { display: block; animation: fade-up .3s var(--ease); }
 
 /* ── Regional tabs ── */
-.reg-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.reg-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
 
 .reg-tab {
-  padding: 7px 14px;
-  border-radius: var(--r-sm);
-  font-size: .78rem;
-  font-weight: 600;
+  padding: 11px 22px;
+  border-radius: 999px;
+  font-size: .92rem;
+  font-weight: 700;
+  letter-spacing: .01em;
   font-family: inherit;
   cursor: pointer;
-  border: 1.5px solid var(--border);
+  border: 2px solid var(--border-strong);
   background: var(--surface);
   color: var(--text-dim);
+  box-shadow: var(--shadow-sm);
   transition: all .18s var(--ease);
 }
 
-.reg-tab:hover:not(.active) { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-.reg-tab.active { background: var(--text); color: #fff; border-color: var(--text); box-shadow: var(--shadow-sm); }
+.reg-tab:hover:not(.active) {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.reg-tab.active {
+  background: var(--accent-grad);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(45,59,224,.35);
+}
 
 .reg-panel { display: none; }
 .reg-panel.active { display: block; animation: fade-up .3s var(--ease); }
@@ -811,8 +824,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .chart-row { flex-direction: column; gap: 16px; }
   .chart-box { min-width: 100%; padding: 16px; }
   .chart-box h2 { font-size: .82rem; }
-  .reg-tabs { gap: 6px; }
-  .reg-tab { padding: 5px 10px; font-size: .73rem; }
+  .reg-tabs { gap: 8px; }
+  .reg-tab { padding: 9px 16px; font-size: .82rem; }
   table { font-size: .75rem; }
   thead th, tbody td { padding: 8px 10px; }
   .login-box { width: 90%; max-width: 360px; padding: 32px 24px; }
