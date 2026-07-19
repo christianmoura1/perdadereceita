@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="assets/chart.umd.min.js"></script>
 <style>
 /* ── Design tokens ── */
 :root {
@@ -1034,13 +1034,12 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 
       <nav class="view-toggle" role="tablist" aria-label="Selecionar visualização">
         <button class="view-btn" id="btn-mensal" onclick="setView('mensal')" role="tab" aria-selected="false" aria-controls="view-mensal" tabindex="-1">Mensal</button>
-        <button class="view-btn" id="btn-mtd" onclick="setView('mtd')" role="tab" aria-selected="false" aria-controls="view-mtd" tabindex="-1">MTD &mdash; Jun/2026</button>
-        <button class="view-btn" id="btn-jun" onclick="setView('jun')" role="tab" aria-selected="false" aria-controls="view-jun" tabindex="-1">MTD &mdash; Jun/2026 (arch)</button>
-        <button class="view-btn active" id="btn-jul" onclick="setView('jul')" role="tab" aria-selected="true" aria-controls="view-jul" tabindex="0">MTD &mdash; Jul/2026</button>
+        <button class="view-btn active" id="btn-atual" onclick="setView('atual')" role="tab" aria-selected="true" aria-controls="view-atual" tabindex="0">MTD</button>
+        <button class="view-btn" id="btn-hist" onclick="setView('hist')" role="tab" aria-selected="false" aria-controls="view-hist" tabindex="-1">Hist&oacute;rico</button>
       </nav>
 
       <div class="sidebar-meta">
-        <span class="subtitle" id="subtitle-sidebar">Jul/2026 &middot; carregando…</span>
+        <span class="subtitle" id="subtitle-sidebar">carregando…</span>
       </div>
     </aside>
 
@@ -1050,7 +1049,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
         <h1>Perda de Receita — Manutenção</h1>
-        <span class="subtitle" id="subtitle-topbar">Zamp &nbsp;&middot;&nbsp; Jul/2026 &nbsp;&middot;&nbsp; carregando…</span>
+        <span class="subtitle" id="subtitle-topbar">Zamp &nbsp;&middot;&nbsp; carregando…</span>
       </div>
 
       <div class="dash-content">
@@ -1070,45 +1069,12 @@ button:focus-visible, input:focus-visible, a:focus-visible {
     <div id="reg-panels-mensal"></div>
   </div>
 
-  <div class="view" id="view-mtd" role="tabpanel" aria-labelledby="btn-mtd" hidden>
-    <div class="legenda">
-      <strong>Status (% perda acumulada):</strong>
-      <div class="leg-item"><span class="leg-dot" style="background:#065f46"></span> Dentro da Meta (≤0,74%)</div>
-      <div class="leg-item"><span class="leg-dot" style="background:#ca8a04"></span> Atenção (0,75–0,99%)</div>
-      <div class="leg-item"><span class="leg-dot" style="background:#991b1b"></span> Acima (1,00–1,20%)</div>
-      <div class="leg-item"><span class="leg-dot" style="background:#6b21a8"></span> Muito Acima (&gt;1,20%)</div>
+  <div class="view active" id="view-atual" role="tabpanel" aria-labelledby="btn-atual">
+    <div class="subview-toggle" id="atual-subview-toggle" role="tablist" aria-label="Total ou Regionais">
+      <button class="subview-btn active" id="subbtn-atual-total" onclick="setSubView('total')" role="tab" aria-selected="true">Total</button>
+      <button class="subview-btn" id="subbtn-atual-regionais" onclick="setSubView('regionais')" role="tab" aria-selected="false">Regionais</button>
     </div>
-    <div class="cards" id="cards-mtd">
-      <div class="card"><div class="label">R$ Perdidos — 1 a 31/Mai</div><div class="value">R$ 4.247.417</div><div class="sub">Acumulado MTD Brasil (1–31/Mai)</div><span class="badge-mtd">MTD</span></div>
-      <div class="card"><div class="label">Objetivo/dia projetado</div><div class="value">R$ 97.050</div><div class="sub">Meta diária Brasil</div><span style="display:inline-block;background:#065f46;color:#fff;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;margin-top:6px">Projetado</span></div>
-      <div class="card"><div class="label">Maior perda (dia)</div><div class="value">R$ 221.506,57</div><div class="sub">Dia 7/Mai</div><span style="display:inline-block;background:#fee2e2;color:#991b1b;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;margin-top:6px">↑ Maior perda</span></div>
-      <div class="card"><div class="label">Menor perda (dia)</div><div class="value">R$ 65.438,33</div><div class="sub">Dia 31/Mai</div><span style="display:inline-block;background:#d1fae5;color:#065f46;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;margin-top:6px">↓ Menor perda</span></div>
-    </div>
-    <div class="chart-row">
-      <div class="chart-box"><h2>Brasil — Perda por Dia + Meta (Mai/2026)</h2><canvas id="mtd-bar-brasil" height="220"></canvas></div>
-      <div class="chart-box"><h2>Brasil — Evolução Diária vs Meta</h2><canvas id="mtd-line-brasil" height="220"></canvas></div>
-    </div>
-    <div class="section-divider"><h2>Resumo MTD por Regional — Mai/2026 (dias 1–31)</h2></div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Regional</th><th class="num">Restaurantes</th><th class="num">Proj. Venda (R$)</th><th class="num">Obj. Mês (R$)</th><th class="num">Obj. Dia (R$)</th><th class="num">31/Mai (R$)</th><th class="num">1 a 30/Mai (R$)</th><th class="num">Acumulado (R$)</th><th class="num">Perda Média/Loja</th><th class="num">%</th><th>Status</th></tr></thead>
-        <tbody id="tbody-resumo-mtd"></tbody>
-      </table>
-    </div>
-    <div id="comentario-dia-box" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px 28px;margin:0 0 24px 0;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <span style="font-size:1.25rem;">💬</span>
-        <span style="font-weight:700;font-size:1rem;color:#1e293b;" id="comentario-dia-titulo">Comentário do Dia</span>
-        <span style="margin-left:auto;font-size:.8rem;color:#64748b;" id="comentario-dia-data"></span>
-      </div>
-      <p id="comentario-dia-texto" style="margin:0;font-size:.92rem;color:#334155;line-height:1.7;"></p>
-    </div>
-    <div class="section-divider"><h2>Por Regional — MTD Dia a Dia</h2></div>
-    <div class="reg-tabs" id="reg-tabs-mtd"></div>
-    <div id="reg-panels-mtd"></div>
-  </div>
-
-  <div class="view" id="view-jun" role="tabpanel" aria-labelledby="btn-jun">
+    <div class="subview-panel active" id="subview-atual-total">
     <div class="legenda">
       <strong>Status (% perda acumulada):</strong>
       <div class="leg-item"><span class="leg-dot" style="background:#065f46"></span> Dentro da Meta (≤0,74%)</div>
@@ -1117,120 +1083,17 @@ button:focus-visible, input:focus-visible, a:focus-visible {
       <div class="leg-item"><span class="leg-dot" style="background:#6b21a8"></span> Muito Acima (&gt;1,20%)</div>
     </div>
     <div class="cards">
-      <div class="card"><div class="label">Total MTD Jun/2026</div><div class="value" id="jun-total-val">R$ 2.967.117,00</div><div class="sub" id="jun-total-sub">Acumulado MTD Brasil (1–30/Jun)</div></div>
-      <div class="card"><div class="label">Maior Perda/Dia</div><div class="value" id="jun-worst-val">R$ 183.786</div><div class="sub" id="jun-worst-sub">Dia 19/Jun</div></div>
-      <div class="card"><div class="label">Menor Perda/Dia</div><div class="value" id="jun-best-val">R$ 56.544</div><div class="sub" id="jun-best-sub">Dia 3/Jun</div></div>
-      <div class="card"><div class="label">Meta/Dia Brasil</div><div class="value">R$ 96.066</div><div class="sub">Objetivo diário</div></div>
-      <div class="card card-destaque"><div class="label">Projeção Fechamento</div><div class="value" id="jun-proj-val">R$ 2.959.877</div><div class="sub">Proj. Venda × 0,76% (% oficial BI)</div></div>
+      <div class="card"><div class="label" id="atual-total-label">Total MTD</div><div class="value" id="atual-total-val">—</div><div class="sub" id="atual-total-sub">Acumulado MTD Brasil</div></div>
+      <div class="card"><div class="label">Maior Perda/Dia</div><div class="value" id="atual-worst-val">—</div><div class="sub" id="atual-worst-sub"></div></div>
+      <div class="card"><div class="label">Menor Perda/Dia</div><div class="value" id="atual-best-val">—</div><div class="sub" id="atual-best-sub"></div></div>
+      <div class="card"><div class="label">Meta/Dia Brasil</div><div class="value" id="atual-meta-val">—</div><div class="sub">Objetivo diário</div></div>
+      <div class="card card-destaque"><div class="label">Projeção Fechamento</div><div class="value" id="atual-proj-val">—</div><div class="sub" id="atual-proj-sub"></div></div>
     </div>
     <div class="chart-row">
-      <div class="chart-box"><h2>Brasil — Perda por Dia + Meta (Jun/2026)</h2><canvas id="jun-bar-brasil"></canvas></div>
-      <div class="chart-box"><h2>Brasil — Evolução Diária vs Meta</h2><canvas id="jun-line-brasil"></canvas></div>
+      <div class="chart-box"><h2>Brasil — Perda por Dia + Meta</h2><canvas id="atual-bar-brasil"></canvas></div>
+      <div class="chart-box"><h2>Brasil — Evolução Diária vs Meta</h2><canvas id="atual-line-brasil"></canvas></div>
     </div>
-    <div class="section-divider"><h2>Resumo MTD por Regional — Jun/2026 (1–30/Jun)</h2></div>
-    <div class="table-wrap">
-      <table class="tabela-resumo">
-        <colgroup>
-          <col class="c-reg"><col class="c-rest"><col class="c-proj"><col class="c-objmes">
-          <col class="c-objdia"><col class="c-dia"><col class="c-antes"><col class="c-acum">
-          <col class="c-loja"><col class="c-pct"><col class="c-status">
-        </colgroup>
-        <!-- ⚠️ ATENÇÃO: Atualizar th-jun-dia e th-jun-antes a cada ciclo junto com tbody-resumo-jun -->
-        <thead><tr>
-          <th>Regional</th>
-          <th class="num">Rest.</th>
-          <th class="num">Proj. Venda</th>
-          <th class="num">Obj. Mês</th>
-          <th class="num">Obj. Dia</th>
-          <th class="num" id="th-jun-dia">30/Jun</th>
-          <th class="num" id="th-jun-antes">1–29/Jun</th>
-          <th class="num">Acumulado</th>
-          <th class="num">Loja/Dia</th>
-          <th class="num">%</th>
-          <th>Status</th>
-        </tr></thead>
-        <tbody id="tbody-resumo-jun">
-<tr><td><strong>BK É FOGO NORTE</strong></td><td class="num">32</td><td class="num">R$ 19.426.340</td><td class="num">R$ 143.755</td><td class="num">R$ 4.792</td><td class="num" style="background:#ede9fe;color:#6d28d9;font-weight:700">R$ 18.036</td><td class="num">R$ 44.619</td><td class="num"><strong>R$ 62.655</strong></td><td class="num">R$ 1.958</td><td class="num">0,3%</td><td><span class="st-verde">🟢 Meta</span></td></tr>
-<tr><td><strong>BK É FOGO LESTE</strong></td><td class="num">68</td><td class="num">R$ 41.176.582</td><td class="num">R$ 304.707</td><td class="num">R$ 10.157</td><td class="num" style="background:#ede9fe;color:#6d28d9;font-weight:700">R$ 29.083</td><td class="num">R$ 334.024</td><td class="num"><strong>R$ 363.107</strong></td><td class="num">R$ 5.340</td><td class="num">0,9%</td><td><span class="st-amarelo">🟡 Atenção</span></td></tr>
-<tr><td><strong>BK É FOGO CENTRO LITORAL</strong></td><td class="num">34</td><td class="num">R$ 17.754.650</td><td class="num">R$ 131.385</td><td class="num">R$ 4.380</td><td class="num" style="background:#d1fae5;color:#065f46;font-weight:700">R$ 1.031</td><td class="num">R$ 134.232</td><td class="num"><strong>R$ 135.263</strong></td><td class="num">R$ 3.978</td><td class="num">0,8%</td><td><span class="st-amarelo">🟡 Atenção</span></td></tr>
-<tr><td><strong>SP SUL</strong></td><td class="num">65</td><td class="num">R$ 34.509.873</td><td class="num">R$ 255.373</td><td class="num">R$ 8.512</td><td class="num" style="background:#d1fae5;color:#065f46;font-weight:700">R$ 7.106</td><td class="num">R$ 343.326</td><td class="num"><strong>R$ 350.432</strong></td><td class="num">R$ 5.391</td><td class="num">1,0%</td><td><span class="st-vermelho">🔴 Acima</span></td></tr>
-<tr><td><strong>SP INTERIOR NORTE</strong></td><td class="num">69</td><td class="num">R$ 36.007.228</td><td class="num">R$ 266.453</td><td class="num">R$ 8.882</td><td class="num" style="background:#d1fae5;color:#065f46;font-weight:700">R$ 5.499</td><td class="num">R$ 251.693</td><td class="num"><strong>R$ 257.192</strong></td><td class="num">R$ 3.727</td><td class="num">0,7%</td><td><span class="st-verde">🟢 Meta</span></td></tr>
-<tr><td><strong>SP INTERIOR SUL</strong></td><td class="num">57</td><td class="num">R$ 32.133.102</td><td class="num">R$ 237.785</td><td class="num">R$ 7.926</td><td class="num" style="background:#d1fae5;color:#065f46;font-weight:700">R$ 1.906</td><td class="num">R$ 198.688</td><td class="num"><strong>R$ 200.594</strong></td><td class="num">R$ 3.519</td><td class="num">0,6%</td><td><span class="st-verde">🟢 Meta</span></td></tr>
-<tr><td><strong>CENTRO OESTE</strong></td><td class="num">65</td><td class="num">R$ 38.216.651</td><td class="num">R$ 282.803</td><td class="num">R$ 9.427</td><td class="num" style="background:#d1fae5;color:#065f46;font-weight:700">R$ 7.419</td><td class="num">R$ 356.053</td><td class="num"><strong>R$ 363.472</strong></td><td class="num">R$ 5.592</td><td class="num">1,0%</td><td><span class="st-vermelho">🔴 Acima</span></td></tr>
-<tr><td><strong>MINAS BAHIA</strong></td><td class="num">54</td><td class="num">R$ 35.806.749</td><td class="num">R$ 264.970</td><td class="num">R$ 8.832</td><td class="num" style="background:#d1fae5;color:#065f46;font-weight:700">R$ 2.881</td><td class="num">R$ 246.861</td><td class="num"><strong>R$ 249.742</strong></td><td class="num">R$ 4.625</td><td class="num">0,7%</td><td><span class="st-verde">🟢 Meta</span></td></tr>
-<tr><td><strong>NE</strong></td><td class="num">85</td><td class="num">R$ 56.043.789</td><td class="num">R$ 414.724</td><td class="num">R$ 13.824</td><td class="num" style="background:#ede9fe;color:#6d28d9;font-weight:700">R$ 27.854</td><td class="num">R$ 225.650</td><td class="num"><strong>R$ 253.504</strong></td><td class="num">R$ 2.982</td><td class="num">0,5%</td><td><span class="st-verde">🟢 Meta</span></td></tr>
-<tr><td><strong>RJ</strong></td><td class="num">93</td><td class="num">R$ 42.409.670</td><td class="num">R$ 313.832</td><td class="num">R$ 10.461</td><td class="num" style="background:#d1fae5;color:#065f46;font-weight:700">R$ 1.863</td><td class="num">R$ 437.381</td><td class="num"><strong>R$ 439.244</strong></td><td class="num">R$ 4.723</td><td class="num">1,0%</td><td><span class="st-vermelho">🔴 Acima</span></td></tr>
-<tr><td><strong>SUL</strong></td><td class="num">71</td><td class="num">R$ 35.972.842</td><td class="num">R$ 266.199</td><td class="num">R$ 8.873</td><td class="num" style="background:#d1fae5;color:#065f46;font-weight:700">R$ 7.537</td><td class="num">R$ 284.375</td><td class="num"><strong>R$ 291.912</strong></td><td class="num">R$ 4.111</td><td class="num">0,8%</td><td><span class="st-amarelo">🟡 Atenção</span></td></tr>
-<tr class="total-row"><td>BRASIL TOTAL</td><td class="num">693</td><td class="num">R$ 389.457.476</td><td class="num">R$ 2.881.986</td><td class="num">R$ 96.066</td><td class="num" style="background:#ede9fe;color:#6d28d9;font-weight:700">R$ 110.215</td><td class="num">R$ 2.856.902</td><td class="num"><strong>R$ 2.967.117</strong></td><td class="num">—</td><td class="num"><strong>0,76%</strong></td><td><span class="st-verde">🟢 Meta</span></td></tr>
-</tbody>
-      </table>
-    </div>
-    <div id="comentario-jun-box" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px 28px;margin:24px 0;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <span style="font-size:1.25rem;">💬</span>
-        <span style="font-weight:700;font-size:1rem;color:#1e293b;" id="jun-comentario-titulo">Comentário do Dia</span>
-        <span style="margin-left:auto;font-size:.8rem;color:#64748b;" id="jun-comentario-data">Gerado automaticamente</span>
-      </div>
-      <p id="jun-comentario-texto" style="margin:0;font-size:.92rem;color:#334155;line-height:1.7;"></p>
-    </div>
-
-    <div id="mudancas-jun-box" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px 28px;margin:24px 0;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-        <span style="font-size:1.25rem;">🚨</span>
-        <span style="font-weight:700;font-size:1rem;color:#1e293b;">Mudanças Importantes</span>
-      </div>
-      <div id="mudancas-jun-texto"></div>
-    </div>
-
-    <div class="section-divider"><h2>Top 10 Restaurantes — Maior Perda de Receita Jun/2026</h2></div>
-    <div style="overflow-x:auto;margin-bottom:28px;">
-      <table>
-        <thead><tr><th>#</th><th>Restaurante</th><th>Regional</th><th class="num">Total (R$)</th></tr></thead>
-        <tbody>
-          <tr><td>1</td><td><strong>FS SP - AV JACU PESSEGO 8210</strong></td><td>SP SUL</td><td class="num">R$ 53.384</td></tr>
-          <tr><td>2</td><td><strong>VARZEA GRANDE SHOP</strong></td><td>CENTRO OESTE</td><td class="num">R$ 49.711</td></tr>
-          <tr><td>3</td><td><strong>SHOP DA BAHIA</strong></td><td>MINAS BAHIA</td><td class="num">R$ 44.268</td></tr>
-          <tr><td>4</td><td><strong>ILR RJ - AV NS DE COPACABANA 915</strong></td><td>RJ</td><td class="num">R$ 39.859</td></tr>
-          <tr><td>5</td><td><strong>SHOP CENTER UBERABA</strong></td><td>CENTRO OESTE</td><td class="num">R$ 32.961</td></tr>
-          <tr><td>6</td><td><strong>SHOP CAMPO GRANDE</strong></td><td>CENTRO OESTE</td><td class="num">R$ 30.126</td></tr>
-          <tr><td>7</td><td><strong>CANOAS SHOP</strong></td><td>SUL</td><td class="num">R$ 28.829</td></tr>
-          <tr><td>8</td><td><strong>SHOP SP MARKET</strong></td><td>SP SUL</td><td class="num">R$ 28.789</td></tr>
-          <tr><td>9</td><td><strong>SHOP DA ILHA</strong></td><td>BK É FOGO CENTRO LITORAL</td><td class="num">R$ 28.132</td></tr>
-          <tr><td>10</td><td><strong>MADUREIRA SHOP</strong></td><td>RJ</td><td class="num">R$ 27.478</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="section-divider"><h2>Por Regional — Jun/2026 Dia a Dia</h2></div>
-    <div class="reg-tabs" id="reg-tabs-jun"></div>
-    <div id="reg-panels-jun"></div>
-  </div>
-
-  <div class="view active" id="view-jul" role="tabpanel" aria-labelledby="btn-jul">
-    <div class="subview-toggle" id="jul-subview-toggle" role="tablist" aria-label="Total ou Regionais">
-      <button class="subview-btn active" id="subbtn-jul-total" onclick="setJulSubView('total')" role="tab" aria-selected="true">Total</button>
-      <button class="subview-btn" id="subbtn-jul-regionais" onclick="setJulSubView('regionais')" role="tab" aria-selected="false">Regionais</button>
-    </div>
-    <div class="subview-panel active" id="subview-jul-total">
-    <div class="legenda">
-      <strong>Status (% perda acumulada):</strong>
-      <div class="leg-item"><span class="leg-dot" style="background:#065f46"></span> Dentro da Meta (≤0,74%)</div>
-      <div class="leg-item"><span class="leg-dot" style="background:#ca8a04"></span> Atenção (0,75–0,99%)</div>
-      <div class="leg-item"><span class="leg-dot" style="background:#991b1b"></span> Acima (1,00–1,20%)</div>
-      <div class="leg-item"><span class="leg-dot" style="background:#6b21a8"></span> Muito Acima (&gt;1,20%)</div>
-    </div>
-    <div class="cards">
-      <div class="card"><div class="label">Total MTD Jul/2026</div><div class="value" id="jul-total-val">R$ 1.929.983</div><div class="sub" id="jul-total-sub">Acumulado MTD Brasil (1–16/Jul)</div></div>
-      <div class="card"><div class="label">Maior Perda/Dia</div><div class="value" id="jul-worst-val">R$ 181.765</div><div class="sub" id="jul-worst-sub">Dia 5/Jul</div></div>
-      <div class="card"><div class="label">Menor Perda/Dia</div><div class="value" id="jul-best-val">R$ 71.723</div><div class="sub" id="jul-best-sub">Dia 6/Jul</div></div>
-      <div class="card"><div class="label">Meta/Dia Brasil</div><div class="value">R$ 99.859</div><div class="sub">Objetivo diário</div></div>
-      <div class="card card-destaque"><div class="label">Projeção Fechamento</div><div class="value" id="jul-proj-val">R$ 3.739.342</div><div class="sub" id="jul-proj-sub">Acumulado + Média/Dia × Dias Restantes (15 dias)</div></div>
-    </div>
-    <div class="chart-row">
-      <div class="chart-box"><h2>Brasil — Perda por Dia + Meta (Jul/2026)</h2><canvas id="jul-bar-brasil"></canvas></div>
-      <div class="chart-box"><h2>Brasil — Evolução Diária vs Meta</h2><canvas id="jul-line-brasil"></canvas></div>
-    </div>
-    <div class="section-divider"><h2 id="jul-resumo-titulo">Resumo MTD por Regional — Jul/2026 (1–16/Jul)</h2></div>
+    <div class="section-divider"><h2 id="atual-resumo-titulo">Resumo MTD por Regional</h2></div>
     <div class="table-wrap">
       <table class="tabela-resumo">
         <colgroup>
@@ -1244,41 +1107,47 @@ button:focus-visible, input:focus-visible, a:focus-visible {
           <th class="num">Proj. Venda</th>
           <th class="num">Obj. Mês</th>
           <th class="num">Obj. Dia</th>
-          <th class="num" id="th-jul-dia">16/Jul</th>
-          <th class="num" id="th-jul-antes">1–15/Jul</th>
+          <th class="num" id="th-atual-dia">Último dia</th>
+          <th class="num" id="th-atual-antes">Dias antes</th>
           <th class="num">Acumulado</th>
           <th class="num">Loja/Dia</th>
           <th class="num">%</th>
           <th>Status</th>
         </tr></thead>
-        <tbody id="tbody-resumo-jul">
+        <tbody id="tbody-resumo-atual">
 </tbody>
       </table>
     </div>
 
-    <div id="comentario-jul-box" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px 28px;margin:24px 0;">
+    <div id="comentario-atual-box" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px 28px;margin:24px 0;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
         <span style="font-size:1.25rem;">💬</span>
-        <span style="font-weight:700;font-size:1rem;color:#1e293b;" id="jul-comentario-titulo">Comentário do Dia</span>
-        <span style="margin-left:auto;font-size:.8rem;color:#64748b;" id="jul-comentario-data">Gerado automaticamente</span>
+        <span style="font-weight:700;font-size:1rem;color:#1e293b;" id="atual-comentario-titulo">Comentário do Dia</span>
+        <span style="margin-left:auto;font-size:.8rem;color:#64748b;" id="atual-comentario-data">Gerado automaticamente</span>
       </div>
-      <p id="jul-comentario-texto" style="margin:0;font-size:.92rem;color:#334155;line-height:1.7;">Aguardando dados do primeiro dia de julho.</p>
+      <p id="atual-comentario-texto" style="margin:0;font-size:.92rem;color:#334155;line-height:1.7;">Carregando…</p>
     </div>
 
-    <div id="mudancas-jul-box" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px 28px;margin:24px 0;">
+    <div id="mudancas-atual-box" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px 28px;margin:24px 0;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
         <span style="font-size:1.25rem;">🚨</span>
         <span style="font-weight:700;font-size:1rem;color:#1e293b;">Mudanças Importantes</span>
       </div>
-      <div id="mudancas-jul-texto"></div>
+      <div id="mudancas-atual-texto"></div>
     </div>
 
-    <div id="jul-total-content"></div>
-    </div><!-- /#subview-jul-total -->
-    <div class="subview-panel" id="subview-jul-regionais">
-      <div class="reg-tabs" id="reg-tabs-jul"></div>
-      <div id="reg-panels-jul"></div>
+    <div id="atual-total-content"></div>
+    </div><!-- /#subview-atual-total -->
+    <div class="subview-panel" id="subview-atual-regionais">
+      <div class="reg-tabs" id="reg-tabs-atual"></div>
+      <div id="reg-panels-atual"></div>
     </div>
+  </div>
+
+  <div class="view" id="view-hist" role="tabpanel" aria-labelledby="btn-hist" hidden>
+    <div class="section-divider"><h2>Meses anteriores — fechamentos</h2></div>
+    <div class="reg-tabs" id="hist-mes-tabs"></div>
+    <div id="hist-mes-panels"></div>
   </div>
 
       </div><!-- /.dash-content -->
@@ -1320,7 +1189,7 @@ function doLogin() {
       return;
     }
     btn.textContent = 'Carregando dados...';
-    Promise.all([dadosProntos, detAggPronto]).then(function() {
+    dadosProntos.then(function() {
       btn.classList.remove('btn-loading'); btn.disabled = false; btn.textContent = 'Entrar';
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('dashboard').style.display = 'block';
@@ -1348,27 +1217,19 @@ function setView(v) {
   activeBtn.classList.add('active'); activeBtn.setAttribute('aria-selected','true'); activeBtn.setAttribute('tabindex','0'); activeBtn.focus();
   window.scrollTo({ top: 0, behavior: 'smooth' });
   // Reatualizar textos dinâmicos ao trocar de aba
-  if (v === 'jul') {
+  if (v === 'atual') {
     setTimeout(function() {
-      gerarComentarioJul();
-      gerarMudancasJul();
-      // Re-renderizar detalhamento por regional (idempotente)
-      if (typeof detAgg === 'object' && detAgg && typeof renderDetalhe === 'function' && typeof julNames !== 'undefined') {
-        julNames.forEach(function(reg) {
+      gerarComentarioMes();
+      gerarMudancasMes();
+      if (detAgg) {
+        mesNames.forEach(function(reg) {
           try { renderDetalhe(reg); } catch(e) { console.error('renderDetalhe erro em ' + reg + ':', e); }
         });
-      }
-      if (typeof renderJulTotalDetalhe === 'function') {
-        try { renderJulTotalDetalhe(); } catch(e) { console.error('renderJulTotalDetalhe erro:', e); }
+        try { renderTotalDetalhe(); } catch(e) { console.error('renderTotalDetalhe erro:', e); }
       }
     }, 100);
   }
-  if (v === 'jun') {
-    setTimeout(function() {
-      if (typeof gerarComentarioJun === 'function') gerarComentarioJun();
-      if (typeof gerarMudancas === 'function') gerarMudancas();
-    }, 100);
-  }
+  if (v === 'hist') renderHistorico();
 }
 
 var gridColor = '#e8eaf2', tickColor = '#9096b0';
@@ -1393,52 +1254,56 @@ function badge(pct) {
 }
 
 // ============================================================
-// DADOS — carregados via fetch de /data/dados.json e /data/detalhe-jul.json
+// DADOS — carregados via fetch de /data/dados.json e /data/detalhe-mes.json
 // (antes ficavam embutidos aqui como literais; ver scripts/gerar_dados.py)
 // ============================================================
-var mesesLabels, mtdDias, mtdLabels;
-var regionaisData, mtdData, extraData, metaDia, brasilMtdVals, metaDiaBrasilLine;
-var brasil2025, brasil2026;
-var junData, junExtraData, junDias, brasilJunVals, metaDiaBrasilJun;
-var julData, julExtraData, julDias, brasilJulVals, metaDiaBrasilJul;
-var LABEL_REG, julAnterior, pctTotalJul, junAnterior, pctTotal;
-var detAgg, dadosMeta;
-var regNames, mtdNames, junNames, julNames;
+var mesesLabels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+var LABEL_REG, regionaisData, brasil2025, brasil2026, regNames;
+var mesAtual, historico;
+var mesData, mesExtra, mesDias, brasilMesVals, metaDiaMes, mesNames, mesAnterior, pctTotalMes;
+var MES_NOME, MES_ANO, MES_DIAS, MES_ISO;
+var detAgg = null, dashboardIniciado = false;
 
 var dadosProntos = fetch('data/dados.json').then(function(r){ return r.json(); }).then(function(d) {
-  mesesLabels = d.mesesLabels; mtdDias = d.mtdDias; mtdLabels = d.mtdLabels;
-  regionaisData = d.regionaisData; mtdData = d.mtdData; extraData = d.extraData; metaDia = d.metaDia;
-  brasilMtdVals = d.brasilMtdVals; metaDiaBrasilLine = d.metaDiaBrasilLine;
+  LABEL_REG = d.LABEL_REG;
+  regionaisData = d.regionaisData;
   brasil2025 = d.brasil2025; brasil2026 = d.brasil2026;
-  junData = d.junData; junExtraData = d.junExtraData; junDias = d.junDias;
-  brasilJunVals = d.brasilJunVals; metaDiaBrasilJun = d.metaDiaBrasilJun;
-  julData = d.julData; julExtraData = d.julExtraData; julDias = d.julDias;
-  brasilJulVals = d.brasilJulVals; metaDiaBrasilJul = d.metaDiaBrasilJul;
-  LABEL_REG = d.LABEL_REG; julAnterior = d.julAnterior; pctTotalJul = d.pctTotalJul;
-  junAnterior = d.junAnterior; pctTotal = d.pctTotal;
-  dadosMeta = d._meta;
   regNames = Object.keys(regionaisData);
-  mtdNames = Object.keys(mtdData);
-  junNames = Object.keys(junData);
-  julNames = Object.keys(julData);
+  mesAtual = d.mesAtual;
+  historico = d.historico || [];
+  mesData = mesAtual.data; mesExtra = mesAtual.extra;
+  brasilMesVals = mesAtual.brasilVals; metaDiaMes = mesAtual.metaDiaBrasil;
+  mesAnterior = mesAtual.anterior; pctTotalMes = mesAtual.pctTotal;
+  mesNames = Object.keys(mesData);
+  MES_NOME = mesAtual.nome; MES_ANO = mesAtual.ano; MES_DIAS = mesAtual.diasNoMes;
+  MES_ISO = mesAtual.ano + '-' + (mesAtual.mes < 10 ? '0'+mesAtual.mes : mesAtual.mes);
+  mesDias = [];
+  for (var i = 1; i <= MES_DIAS; i++) mesDias.push(i);
 });
-var detAggPronto = fetch('data/detalhe-jul.json').then(function(r){ return r.json(); }).then(function(d) {
+
+// Detalhamento (1MB+) baixa em segundo plano — o painel abre sem esperar por ele
+var detAggPronto = fetch('data/detalhe-mes.json').then(function(r){ return r.json(); }).then(function(d) {
   detAgg = d;
-}).catch(function(e) { console.error('Falha ao carregar detalhe-jul.json:', e); detAgg = null; });
+  if (dashboardIniciado) {
+    mesNames.forEach(function(reg) {
+      try { renderDetalhe(reg); } catch(e) { console.error('renderDetalhe erro em ' + reg + ':', e); }
+    });
+    try { renderTotalDetalhe(); } catch(e) { console.error('renderTotalDetalhe erro:', e); }
+  }
+}).catch(function(e) { console.error('Falha ao carregar detalhe-mes.json:', e); detAgg = null; });
 
 
 function initDashboard() {
+  var btnAtual = document.getElementById('btn-atual');
+  if (btnAtual) btnAtual.textContent = 'MTD \u2014 ' + MES_NOME + '/' + MES_ANO;
+  var lblTotal = document.getElementById('atual-total-label');
+  if (lblTotal) lblTotal.textContent = 'Total MTD ' + MES_NOME + '/' + MES_ANO;
   setTimeout(function() {
     initMensal();
     setTimeout(function() {
-      initMtd();
-      setTimeout(function() {
-        initJun();
-        setTimeout(function() {
-          initJul();
-        }, 300);
-      }, 300);
-    }, 300);
+      initMesAtual();
+      dashboardIniciado = true;
+    }, 200);
   }, 100);
 }
 function initMensal() {
@@ -1552,439 +1417,38 @@ function initMensal() {
   });
 }
 
-function initMtd() {
-  new Chart(document.getElementById('mtd-bar-brasil'), {
-    type:'bar',
-    data:{ labels:mtdLabels, datasets:[
-      {label:'Perda (R$)', data:brasilMtdVals, backgroundColor:brasilMtdVals.map(function(v){ return v>97050?'rgba(192,57,43,.8)':'rgba(26,138,82,.8)'; }), borderRadius:4},
-      {label:'Meta/Dia', data:metaDiaBrasilLine, type:'line', borderColor:'#2d3be0', borderWidth:2.5, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
-    ]},
-    options: Object.assign({},baseOpts)
-  });
-
-  new Chart(document.getElementById('mtd-line-brasil'), {
-    type:'line',
-    data:{ labels:mtdLabels, datasets:[
-      {label:'Perda (R$)', data:brasilMtdVals, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,.1)', tension:.3, fill:true, pointRadius:3},
-      {label:'Meta/Dia', data:metaDiaBrasilLine, borderColor:'#2d3be0', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
-    ]},
-    options: Object.assign({},baseOpts)
-  });
-
-  var tbody = document.getElementById('tbody-resumo-mtd');
-  var totalAcum=0, totalDia=0, totalAntes=0, totalRest=0, totalObj=0, totalObjDia=0, totalProj=0;
-  mtdNames.forEach(function(reg) {
-    var ex = extraData[reg];
-    var ratio = ex.objDia>0 ? ex.diaUlt/ex.objDia : 0;
-    var st = badge(ex.pctMes);
-    var diaBg = ratio < 1.0 ? 'background:#d1fae5;color:#065f46;font-weight:700' : ratio <= 1.2 ? 'background:#fee2e2;color:#991b1b;font-weight:700' : 'background:#f3e8ff;color:#6b21a8;font-weight:700';
-    tbody.innerHTML +=
-      '<tr>' +
-      '<td><strong>' + reg + '</strong></td>' +
-      '<td class="num">' + fmtN(ex.rest) + '</td>' +
-      '<td class="num">' + fmtR(ex.projVenda) + '</td>' +
-      '<td class="num">' + fmtR(ex.objMes) + '</td>' +
-      '<td class="num">' + fmtR(ex.objDia) + '</td>' +
-      '<td class="num" style="' + diaBg + '">' + fmtR(ex.diaUlt) + '</td>' +
-      '<td class="num">' + fmtR(ex.acumAntes) + '</td>' +
-      '<td class="num"><strong>' + fmtR(ex.acum) + '</strong></td>' +
-      '<td class="num">' + fmtR(ex.perdaLoja) + '</td>' +
-      '<td class="num">' + fmt(ex.pctMes,2) + '%</td>' +
-      '<td>' + st + '</td>' +
-      '</tr>';
-    totalAcum += ex.acum; totalDia += ex.diaUlt; totalAntes += ex.acumAntes;
-    totalRest += ex.rest; totalObj += ex.objMes; totalObjDia += ex.objDia; totalProj += ex.projVenda;
-  });
-  var ratioTotal = totalObjDia>0 ? totalDia/totalObjDia : 0;
-  tbody.innerHTML +=
-    '<tr class="total-row">' +
-    '<td>BRASIL TOTAL</td>' +
-    '<td class="num">' + fmtN(totalRest) + '</td>' +
-    '<td class="num">' + fmtR(totalProj) + '</td>' +
-    '<td class="num">' + fmtR(totalObj) + '</td>' +
-    '<td class="num">' + fmtR(totalObjDia) + '</td>' +
-    '<td class="num">' + fmtR(totalDia) + '</td>' +
-    '<td class="num">' + fmtR(totalAntes) + '</td>' +
-    '<td class="num"><strong>R$ 4.247.417</strong></td>' +
-    '<td class="num">—</td>' +
-    '<td class="num">0,02%</td>' +
-    '<td>' + badge(0.02) + '</td>' +
-    '</tr>';
-
-  var tabsEl = document.getElementById('reg-tabs-mtd');
-  var panelsEl = document.getElementById('reg-panels-mtd');
-  mtdNames.forEach(function(reg, idx) {
-    var vals = mtdData[reg];
-    var ex = extraData[reg];
-    var meta = metaDia[reg] || 0;
-    var slug = 'mtd_' + idx;
-    var cleanVals = vals.filter(function(v){ return v!==null; });
-    var avg = cleanVals.reduce(function(a,b){ return a+b; },0)/cleanVals.length;
-    var worstVal = Math.max.apply(null,cleanVals);
-    var bestVal = Math.min.apply(null,cleanVals);
-    var worstDia = mtdDias[vals.indexOf(worstVal)];
-    var bestDia = mtdDias[vals.indexOf(bestVal)];
-
-    var tab = document.createElement('button');
-    tab.className = 'reg-tab' + (idx===0?' active':'');
-    tab.textContent = (typeof LABEL_REG !== 'undefined' && LABEL_REG[reg]) ? LABEL_REG[reg] : reg;
-    tab.onclick = function() {
-      document.querySelectorAll('#reg-tabs-mtd .reg-tab').forEach(function(t){ t.classList.remove('active'); });
-      document.querySelectorAll('#reg-panels-mtd .reg-panel').forEach(function(p){ p.classList.remove('active'); });
-      tab.classList.add('active');
-      document.getElementById(slug).classList.add('active');
-    };
-    tabsEl.appendChild(tab);
-
-    var metaLine = Array(31).fill(meta);
-    var barColors = vals.map(function(v){ return (v===null||v===undefined)?'rgba(180,180,180,.4)':v>meta?'rgba(192,57,43,.8)':'rgba(26,138,82,.8)'; });
-
-    var panel = document.createElement('div');
-    panel.className = 'reg-panel' + (idx===0?' active':'');
-    panel.id = slug;
-
-    var rows = '';
-    mtdDias.forEach(function(dia, i) {
-      var v = vals[i];
-      var vsMeta = v!=null ? v-meta : null;
-      var isW = v===worstVal, isB = v===bestVal;
-      var bg = v==null?'':v>meta?'background:#fff5f5':'background:#f5fff9';
-      var vsStr = vsMeta!=null ? ('<span class="'+(vsMeta>0?'delta-neg':'delta-pos')+'">'+(vsMeta>0?'+':'')+fmtR(vsMeta)+'</span>') : '<span class="muted">—</span>';
-      rows += '<tr style="'+bg+'"><td>'+dia+'/Mai'+(isW?' 🔴':isB?' 🟢':'')+'</td><td class="num">'+(v!=null?fmtR(v):'<span class="muted">—</span>')+'</td><td class="num">'+fmtR(meta)+'</td><td class="num">'+vsStr+'</td></tr>';
-    });
-    rows += '<tr class="total-row"><td>Total</td><td class="num">'+fmtR(ex.acum)+'</td><td class="num">'+fmtR(meta*24)+'</td><td class="num"><span class="'+(ex.acum-meta*24>0?'delta-neg':'delta-pos')+'">'+(ex.acum-meta*24>0?'+':'')+fmtR(ex.acum-meta*24)+'</span></td></tr>';
-
-    panel.innerHTML =
-      '<div class="reg-cards">' +
-        '<div class="reg-card"><div class="label">Meta/Dia</div><div class="value">'+fmtR(meta)+'</div></div>' +
-        '<div class="reg-card"><div class="label">Total MTD</div><div class="value">'+fmtR(ex.acum)+'</div></div>' +
-        '<div class="reg-card"><div class="label">Média/Dia</div><div class="value">'+fmtR(avg)+'</div></div>' +
-        '<div class="reg-card"><div class="label">Status</div><div class="value" style="font-size:.9rem">'+fmt(ex.pctMes,2)+'%</div><span style="margin-top:6px;display:inline-block">'+badge(ex.pctMes)+'</span></div>' +
-        '<div class="reg-card"><div class="label">Pior Dia</div><div class="value" style="color:#c0392b">'+worstDia+'/Mai</div><div class="sub">'+fmtR(worstVal)+'</div></div>' +
-        '<div class="reg-card"><div class="label">Melhor Dia</div><div class="value" style="color:#1a8a52">'+bestDia+'/Mai</div><div class="sub">'+fmtR(bestVal)+'</div></div>' +
-      '</div>' +
-      '<div class="chart-row">' +
-        '<div class="chart-box"><h2>'+reg+' — Perda/Dia vs Meta</h2><canvas id="mbar_'+slug+'" height="220"></canvas></div>' +
-        '<div class="chart-box"><h2>'+reg+' — Evolução</h2><canvas id="mline_'+slug+'" height="220"></canvas></div>' +
-      '</div>' +
-      '<div class="chart-box" style="margin-bottom:20px"><h2>'+reg+' — Detalhe Dia a Dia</h2>' +
-        '<div class="mtd-table-wrap"><table><thead><tr><th>Dia</th><th class="num">Perda (R$)</th><th class="num">Meta (R$)</th><th class="num">vs Meta</th></tr></thead>' +
-        '<tbody>'+rows+'</tbody></table></div>' +
-      '</div>';
-    panelsEl.appendChild(panel);
-
-    (function(s, vvals, mline, bcolors) {
-      setTimeout(function() {
-        new Chart(document.getElementById('mbar_'+s), {
-          type:'bar',
-          data:{ labels:mtdLabels, datasets:[
-            {label:'Perda (R$)',data:vvals,backgroundColor:bcolors,borderRadius:4},
-            {label:'Meta/Dia',data:mline,type:'line',borderColor:'#2d3be0',borderWidth:2.5,borderDash:[6,4],pointRadius:0,fill:false,tension:0}
-          ]},
-          options: Object.assign({},baseOpts)
-        });
-        new Chart(document.getElementById('mline_'+s), {
-          type:'line',
-          data:{ labels:mtdLabels, datasets:[
-            {label:'Perda (R$)',data:vvals,borderColor:'#c0392b',backgroundColor:'rgba(192,57,43,.1)',tension:.3,fill:true,pointRadius:3},
-            {label:'Meta/Dia',data:mline,borderColor:'#2d3be0',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,tension:0}
-          ]},
-          options: Object.assign({},baseOpts)
-        });
-      }, 100);
-    })(slug, vals, metaLine, barColors);
-  });
-  setTimeout(gerarComentarioDia, 300);
-}
-
-function gerarComentarioDia() {
-  var regs = Object.keys(extraData);
-  var ultimoDia = mtdDias[mtdDias.length - 1];
-  var idxUltimo = mtdDias.length - 1;
-  var diasValores = [];
-  regs.forEach(function(reg) {
-    var v = mtdData[reg][idxUltimo];
-    if (v !== null && v !== undefined) { diasValores.push({ reg: reg, val: v }); }
-  });
-  if (diasValores.length === 0) return;
-  diasValores.sort(function(a, b) { return b.val - a.val; });
-  var totalDia = diasValores.reduce(function(a, b) { return a + b.val; }, 0);
-  var maiores = diasValores.slice(0, 3);
-  var menores = diasValores.slice(-3).reverse();
-  function fmtC(v) { return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-  var totalAcum = 0;
-  regs.forEach(function(r) { totalAcum += (extraData[r].acum || 0); });
-  var maioresStr = maiores.map(function(d) { return '<strong>' + d.reg + '</strong> (' + fmtC(d.val) + ')'; }).join(', ');
-  var menoresStr = menores.map(function(d) { return '<strong>' + d.reg + '</strong> (' + fmtC(d.val) + ')'; }).join(', ');
-  var txt = 'No dia <strong>' + ultimoDia + '/Mai/2026</strong>, a perda total de manutenção no Brasil foi de ' +
-    '<strong style="color:#991b1b">' + fmtC(totalDia) + '</strong>. ' +
-    'As regionais com <span style="color:#991b1b;font-weight:600">maior perda no dia</span> foram: ' + maioresStr + '. ' +
-    'As regionais com <span style="color:#065f46;font-weight:600">menor perda no dia</span> foram: ' + menoresStr + '. ' +
-    'O acumulado total do mes ate o dia ' + ultimoDia + '/Mai soma <strong>' + fmtC(totalAcum) + '</strong>.';
-  var box = document.getElementById('comentario-dia-titulo');
-  var txtEl = document.getElementById('comentario-dia-texto');
-  var dataEl = document.getElementById('comentario-dia-data');
-  if (box) box.textContent = 'Comentario do Dia - ' + ultimoDia + '/Mai/2026';
-  if (dataEl) dataEl.textContent = 'Gerado automaticamente';
-  if (txtEl) txtEl.innerHTML = txt;
-}
-function initJun() {
-  var hasData = brasilJunVals.filter(function(v){ return v !== null; }).length > 0;
-
-  if (hasData) {
-    var totalAcumJun = 0;
-    junNames.forEach(function(r){ totalAcumJun += (junExtraData[r].acum||0); });
-
-    var maxIdx = 0, maxVal = brasilJunVals[0];
-    var minIdx = 0, minVal = brasilJunVals[0];
-    for (var i=0; i<brasilJunVals.length; i++) {
-      if (brasilJunVals[i] !== null) {
-        if (brasilJunVals[i] > maxVal) { maxVal = brasilJunVals[i]; maxIdx = i; }
-        if (brasilJunVals[i] < minVal) { minVal = brasilJunVals[i]; minIdx = i; }
-      }
-    }
-
-    var junLabels = junDias.map(function(d){ return d+'/Jun'; });
-    var metaJunArr = Array(junDias.length).fill(metaDiaBrasilJun);
-
-    new Chart(document.getElementById('jun-bar-brasil'), {
-      type:'bar',
-      data:{ labels:junLabels, datasets:[
-        {label:'Perda (R$)', data:brasilJunVals,
-         backgroundColor:brasilJunVals.map(function(v){ return v>metaDiaBrasilJun?'rgba(192,57,43,.8)':'rgba(26,138,82,.8)'; }), borderRadius:4},
-        {label:'Meta/Dia', data:metaJunArr, type:'line', borderColor:'#2d3be0', borderWidth:2.5, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
-      ]},
-      options: Object.assign({},baseOpts)
-    });
-
-    new Chart(document.getElementById('jun-line-brasil'), {
-      type:'line',
-      data:{ labels:junLabels, datasets:[
-        {label:'Perda (R$)', data:brasilJunVals, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,.1)', tension:.3, fill:true, pointRadius:3},
-        {label:'Meta/Dia', data:metaJunArr, borderColor:'#2d3be0', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
-      ]},
-      options: Object.assign({},baseOpts)
-    });
-  }
-
-  var tabsEl  = document.getElementById('reg-tabs-jun');
-  var panelsEl = document.getElementById('reg-panels-jun');
-
-  junNames.forEach(function(reg, idx) {
-    var vals = junData[reg];
-    var ex   = junExtraData[reg];
-    var meta = ex.objDia || 0;
-    var slug = 'jun_' + idx;
-
-    var cleanVals = vals.filter(function(v){ return v!==null && v!==undefined; });
-    var avg = cleanVals.length ? cleanVals.reduce(function(a,b){return a+b;},0)/cleanVals.length : 0;
-    var worstVal = cleanVals.length ? Math.max.apply(null,cleanVals) : 0;
-    var bestVal  = cleanVals.length ? Math.min.apply(null,cleanVals) : 0;
-    var worstDay = junDias[vals.indexOf(worstVal)];
-    var bestDay  = junDias[vals.indexOf(bestVal)];
-    var metaLine = Array(junDias.length).fill(meta);
-    var barColors= vals.map(function(v){ return v===null||v===undefined?'rgba(0,0,0,0)':(v>meta?'rgba(192,57,43,.8)':'rgba(26,138,82,.8)'); });
-    var junLabels= junDias.map(function(d){ return d+'/Jun'; });
-
-    var tabBtn = document.createElement('button');
-    tabBtn.className = 'reg-tab' + (idx===0?' active':'');
-    tabBtn.textContent = (typeof LABEL_REG !== 'undefined' && LABEL_REG[reg]) ? LABEL_REG[reg] : reg;
-    tabBtn.onclick = function(){
-      document.querySelectorAll('#reg-tabs-jun .reg-tab').forEach(function(b){ b.classList.remove('active'); });
-      document.querySelectorAll('#reg-panels-jun .reg-panel').forEach(function(p){ p.classList.remove('active'); });
-      this.classList.add('active');
-      document.getElementById('panel-'+slug).classList.add('active');
-    };
-    tabsEl.appendChild(tabBtn);
-
-    var panel = document.createElement('div');
-    panel.className = 'reg-panel' + (idx===0?' active':'');
-    panel.id = 'panel-' + slug;
-
-    var rows = '';
-    junDias.forEach(function(dia, i) {
-      var v = vals[i];
-      var vsMeta = v!=null ? v-meta : null;
-      var isW = v===worstVal, isB = v===bestVal;
-      var bg = v==null?'':v>meta?'background:#fff5f5':'background:#f5fff9';
-      var vsStr = vsMeta!=null ? ('<span class="'+(vsMeta>0?'delta-neg':'delta-pos')+'">'+(vsMeta>0?'+':'')+fmtR(vsMeta)+'</span>') : '<span class="muted">—</span>';
-      rows += '<tr style="'+bg+'"><td>'+dia+'/Jun'+(isW?' 🔴':isB?' 🟢':'')+'</td><td class="num">'+(v!=null?fmtR(v):'<span class="muted">—</span>')+'</td><td class="num">'+fmtR(meta)+'</td><td class="num">'+vsStr+'</td></tr>';
-    });
-    rows += '<tr class="total-row"><td>Total</td><td class="num">'+fmtR(ex.acum)+'</td><td class="num">'+fmtR(meta*26)+'</td><td class="num"><span class="'+(ex.acum-meta*26>0?'delta-neg':'delta-pos')+'">'+(ex.acum-meta*26>0?'+':'')+fmtR(ex.acum-meta*26)+'</span></td></tr>';
-
-    panel.innerHTML =
-      '<div class="reg-cards">' +
-      '<div class="reg-card"><div class="label">Meta/Dia</div><div class="value">'+fmtR(meta)+'</div></div>' +
-      '<div class="reg-card"><div class="label">Total MTD</div><div class="value">'+fmtR(ex.acum)+'</div></div>' +
-      '<div class="reg-card"><div class="label">Média/Dia</div><div class="value">'+fmtR(avg)+'</div></div>' +
-      '<div class="reg-card"><div class="label">Status</div><div class="value" style="font-size:.9rem">'+fmt(ex.pctMes,2)+'%</div><span style="margin-top:6px;display:inline-block">'+badge(ex.pctMes)+'</span></div>' +
-      '<div class="reg-card"><div class="label">Pior Dia</div><div class="value" style="color:#c0392b">'+worstDay+'/Jun</div><div class="sub">'+fmtR(worstVal)+'</div></div>' +
-      '<div class="reg-card"><div class="label">Melhor Dia</div><div class="value" style="color:#1a8a52">'+bestDay+'/Jun</div><div class="sub">'+fmtR(bestVal)+'</div></div>' +
-      '</div>' +
-      '<div class="chart-row">' +
-      '<div class="chart-box"><h2>'+reg+' — Perda/Dia vs Meta</h2><canvas id="bar-'+slug+'"></canvas></div>' +
-      '<div class="chart-box"><h2>'+reg+' — Evolução</h2><canvas id="line-'+slug+'"></canvas></div>' +
-      '</div>' +
-      '<div class="chart-box" style="margin-bottom:20px"><h2>'+reg+' — Detalhe Dia a Dia</h2>' +
-      '<div class="mtd-table-wrap"><table><thead><tr><th>Dia</th><th class="num">Perda (R$)</th><th class="num">Meta (R$)</th><th class="num">vs Meta</th></tr></thead>' +
-      '<tbody>'+rows+'</tbody></table></div>' +
-      '</div>' +
-      '<button class="det-toggle" onclick="toggleDet(this)">&#9654; Detalhamento por Loja / Categoria / Canal</button>' +
-      '<div class="det-content" id="det-jun-' + reg.replace(/[^a-zA-Z0-9]/g,'_') + '"><p class="det-vazio">Nenhum detalhamento carregado.</p></div>';
-    panelsEl.appendChild(panel);
-
-    if (cleanVals.length === 0) return;
-
-    (function(s, v, ml, bc, lbl) {
-      setTimeout(function(){
-        new Chart(document.getElementById('bar-'+s), {
-          type:'bar',
-          data:{ labels:lbl, datasets:[
-            {label:'Perda (R$)', data:v, backgroundColor:bc, borderRadius:4},
-            {label:'Meta/Dia', data:ml, type:'line', borderColor:'#2d3be0', borderWidth:2.5, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
-          ]},
-          options: Object.assign({},baseOpts)
-        });
-        new Chart(document.getElementById('line-'+s), {
-          type:'line',
-          data:{ labels:lbl, datasets:[
-            {label:'Perda (R$)', data:v, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,.1)', tension:.3, fill:true, pointRadius:3},
-            {label:'Meta/Dia', data:ml, borderColor:'#2d3be0', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
-          ]},
-          options: Object.assign({},baseOpts)
-        });
-      }, 100);
-    })(slug, vals, metaLine, barColors, junLabels);
-  });
-
-  gerarComentarioJun();
-  gerarMudancas();
-}
-
-function gerarComentarioJun() {
-  var ultimoDia = 30;
-  var idxUlt = 29;
-  var txtEl = document.getElementById('jun-comentario-texto');
-  var titEl = document.getElementById('jun-comentario-titulo');
-  function fmtC(v){ return 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-  
-  // Total do dia usa brasilJunVals (fonte oficial)
-  var totalDia = brasilJunVals[idxUlt] || 0;
-  if (totalDia === 0) {
-    if (txtEl) txtEl.textContent = 'Sem dados do dia ' + ultimoDia + ' ainda.';
-    return;
-  }
-  
-  // Coletar valores das regionais via junExtraData.diaUlt (valores reais do dia)
-  var regValores = [];
-  junNames.forEach(function(reg) {
-    var ex = junExtraData[reg];
-    if (ex && ex.diaUlt > 0) regValores.push({ reg: reg, val: ex.diaUlt });
-  });
-  regValores.sort(function(a,b){ return b.val - a.val; });
-  var maiores = regValores.slice(0,3);
-  var menores = regValores.slice(-3).reverse();
-  
-  var totalAcum = 0;
-  junNames.forEach(function(r){ totalAcum += (junExtraData[r].acum||0); });
-  
-  var atingiuMeta = totalDia <= metaDiaBrasilJun;
-  var metaMsg = atingiuMeta
-    ? '<strong style="color:#065f46">✅ Meta diária atingida!</strong> A perda de ' + fmtC(totalDia) + ' ficou abaixo do objetivo de ' + fmtC(metaDiaBrasilJun) + '.'
-    : '<strong style="color:#991b1b">❌ Meta diária não atingida.</strong> A perda de ' + fmtC(totalDia) + ' superou o objetivo de ' + fmtC(metaDiaBrasilJun) + '.';
-  
-  var diasPassados = brasilJunVals.filter(function(v){ return v !== null; }).length;
-  var diasTotais = 30;
-  var mediaDiaria = totalAcum / diasPassados;
-  var projFechamento = totalAcum + mediaDiaria * (diasTotais - diasPassados);
-  
-  var txt = 'No dia <strong>' + ultimoDia + '/Jun/2026</strong>: ' + metaMsg + '<br>' +
-    'Maiores perdas: ' + maiores.map(function(d){ return '<strong>' + d.reg + '</strong> (' + fmtC(d.val) + ')'; }).join(', ') + '. ' +
-    'Menores perdas: ' + menores.map(function(d){ return '<strong>' + d.reg + '</strong> (' + fmtC(d.val) + ')'; }).join(', ') + '. ' +
-    'Acumulado Jun: <strong>' + fmtC(totalAcum) + '</strong>. ' +
-    'Projecao fechamento: <strong style="color:#6d28d9">' + fmtC(projFechamento) + '</strong>.';
-  if (titEl) titEl.textContent = 'Comentario do Dia - ' + ultimoDia + '/Jun/2026';
-  if (txtEl) txtEl.innerHTML = txt;
-}
-
-function gerarMudancas() {
-  var box = document.getElementById('mudancas-jun-texto');
-  if (!box) return;
-  function fmtPct(v){ return v.toFixed(1).replace('.',',') + '%'; }
-  function fmtK(v){ return 'R$ ' + (v/1000000).toFixed(1).replace('.',',') + 'M'; }
-  var mudancas = [];
-  var pctAnt = junAnterior.pctTotal;
-  var pctAtu = pctTotal;
-  if (Math.abs(pctAtu - pctAnt) >= 0.05) {
-    var st = pctAtu > pctAnt ? 'Subiu!' : 'Desceu!';
-    var cor = pctAtu > pctAnt ? '#991b1b' : '#065f46';
-    mudancas.push({ ind: 'Brasil Total %', ant: fmtPct(pctAnt), atu: fmtPct(pctAtu), st: st, cor: cor });
-  }
-  junNames.forEach(function(reg){
-    var pctAntReg = junAnterior.regionais[reg] || 0;
-    var pctAtuReg = junExtraData[reg].pctMes || 0;
-    if (Math.abs(pctAtuReg - pctAntReg) >= 0.05 || (pctAntReg < 1.0 && pctAtuReg >= 1.0) || (pctAntReg >= 1.0 && pctAtuReg < 1.0)) {
-      var st = '', cor = '';
-      if (pctAtuReg >= 1.0 && pctAntReg < 1.0) { st = 'Acima'; cor = '#991b1b'; }
-      else if (pctAtuReg >= 0.9 && pctAntReg < 0.9) { st = 'Atenção'; cor = '#ca8a04'; }
-      else if (pctAtuReg > pctAntReg) { st = 'Subiu'; cor = '#ca8a04'; }
-      else { st = 'Desceu'; cor = '#065f46'; }
-      mudancas.push({ ind: reg, ant: fmtPct(pctAntReg), atu: fmtPct(pctAtuReg), st: st, cor: cor });
-    }
-  });
-  // Projeção de fechamento — sempre mostrar na tabela
-  var totalAcumMud = 0;
-  junNames.forEach(function(r){ totalAcumMud += (junExtraData[r].acum||0); });
-  var diasPassadosMud = brasilJunVals.filter(function(v){ return v !== null; }).length;
-  var projAtu = totalAcumMud + (totalAcumMud / diasPassadosMud) * (30 - diasPassadosMud);
-  var stProj = 'Atual';
-  var corProj = '#7c3aed';
-  if (Math.abs(projAtu - junAnterior.projFechamento) >= 10000) {
-    stProj = projAtu > junAnterior.projFechamento ? 'Subiu' : 'Desceu';
-    corProj = projAtu > junAnterior.projFechamento ? '#ca8a04' : '#065f46';
-  }
-  mudancas.push({ ind: 'Proj. Fechamento', ant: fmtK(junAnterior.projFechamento), atu: fmtK(projAtu), st: stProj, cor: corProj });
-  if (mudancas.length === 0) {
-    box.innerHTML = '<p style="color:#64748b;font-size:0.9rem;margin:0;">Nenhuma mudanca significativa em relacao a atualizacao anterior.</p>';
-    return;
-  }
-  var html = '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;"><thead><tr style="border-bottom:2px solid #e2e8f0;"><th style="text-align:left;padding:8px 12px;color:#334155;font-weight:600;">Indicador</th><th style="text-align:center;padding:8px 12px;color:#334155;font-weight:600;">Antes</th><th style="text-align:center;padding:8px 12px;color:#334155;font-weight:600;">Agora</th><th style="text-align:center;padding:8px 12px;color:#334155;font-weight:600;">Alerta</th></tr></thead><tbody>';
-  mudancas.forEach(function(m){
-    html += '<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:10px 12px;font-weight:600;color:#1e293b;">' + m.ind + '</td><td style="text-align:center;padding:10px 12px;color:#64748b;">' + m.ant + '</td><td style="text-align:center;padding:10px 12px;font-weight:600;color:#1e293b;">' + m.atu + '</td><td style="text-align:center;padding:10px 12px;"><span style="display:inline-flex;align-items:center;gap:6px;background:#f8fafc;border-radius:6px;padding:4px 10px;font-size:0.8rem;font-weight:600;color:' + m.cor + ';">' + m.st + '</span></td></tr>';
-  });
-  html += '</tbody></table>';
-  box.innerHTML = html;
-}
-
-function atualizarCabecalhosJul() {
-  var diasComDados = julDias.filter(function(d, i){ return brasilJulVals[i] !== null; });
+function atualizarCabecalhos() {
+  var diasComDados = mesDias.filter(function(d, i){ return brasilMesVals[i] !== null; });
   var ultimoDia = diasComDados.length ? diasComDados[diasComDados.length - 1] : 0;
-  var atualizadoStr = (typeof dadosMeta !== 'undefined' && dadosMeta && dadosMeta.atualizadoEm)
-    ? (function(){ var p = dadosMeta.atualizadoEm.split('-'); return p[2] + '/Jul/' + p[0]; })()
-    : (ultimoDia + '/Jul/2026');
-  var periodoStr = 'Jul/2026 (1–' + ultimoDia + ')';
+  var atualizadoStr = (mesAtual && mesAtual.atualizadoEm)
+    ? (function(){ var p = mesAtual.atualizadoEm.split('-'); return parseInt(p[2],10)+'/'+MES_NOME+'/'+p[0]; })()
+    : (ultimoDia + '/'+MES_NOME+'/'+MES_ANO);
+  var periodoStr = MES_NOME+'/'+MES_ANO+' (1–' + ultimoDia + ')';
 
   var sub1 = document.getElementById('subtitle-sidebar');
   var sub2 = document.getElementById('subtitle-topbar');
   if (sub1) sub1.textContent = periodoStr + ' · Atualizado em ' + atualizadoStr;
   if (sub2) sub2.textContent = 'Zamp · ' + periodoStr + ' · Atualizado em ' + atualizadoStr;
 
-  var totalSub = document.getElementById('jul-total-sub');
-  if (totalSub) totalSub.textContent = 'Acumulado MTD Brasil (1–' + ultimoDia + '/Jul)';
+  var totalSub = document.getElementById('atual-total-sub');
+  if (totalSub) totalSub.textContent = 'Acumulado MTD Brasil (1–' + ultimoDia + '/'+MES_NOME+')';
 
-  var tituloEl = document.getElementById('jul-resumo-titulo');
-  if (tituloEl) tituloEl.textContent = 'Resumo MTD por Regional — Jul/2026 (1–' + ultimoDia + '/Jul)';
-  var thDia = document.getElementById('th-jul-dia');
-  if (thDia) thDia.textContent = ultimoDia + '/Jul';
-  var thAntes = document.getElementById('th-jul-antes');
-  if (thAntes) thAntes.textContent = ultimoDia > 1 ? ('1–' + (ultimoDia - 1) + '/Jul') : '—';
+  var metaVal = document.getElementById('atual-meta-val');
+  if (metaVal) metaVal.textContent = fmtR(metaDiaMes);
 
-  var tbody = document.getElementById('tbody-resumo-jul');
+  var tituloEl = document.getElementById('atual-resumo-titulo');
+  if (tituloEl) tituloEl.textContent = 'Resumo MTD por Regional — '+MES_NOME+'/'+MES_ANO+' (1–' + ultimoDia + '/'+MES_NOME+')';
+  var thDia = document.getElementById('th-atual-dia');
+  if (thDia) thDia.textContent = ultimoDia + '/'+MES_NOME;
+  var thAntes = document.getElementById('th-atual-antes');
+  if (thAntes) thAntes.textContent = ultimoDia > 1 ? ('1–' + (ultimoDia - 1) + '/'+MES_NOME) : '—';
+
+  var tbody = document.getElementById('tbody-resumo-atual');
   if (!tbody) return;
   var html = '';
   var totRest = 0, totProj = 0, totObjMes = 0, totObjDia = 0, totDia = 0, totAntes = 0, totAcum = 0;
-  julNames.forEach(function(reg) {
-    var ex = julExtraData[reg];
+  mesNames.forEach(function(reg) {
+    var ex = mesExtra[reg];
     var lbl = (typeof LABEL_REG !== 'undefined' && LABEL_REG[reg]) ? LABEL_REG[reg] : reg;
     var ratio = ex.objDia > 0 ? ex.diaUlt / ex.objDia : 0;
     var diaBg = ratio < 1.0 ? 'background:#d1fae5;color:#065f46;font-weight:700' : ratio <= 1.2 ? 'background:#fee2e2;color:#991b1b;font-weight:700' : 'background:#ede9fe;color:#6d28d9;font-weight:700';
@@ -1996,7 +1460,7 @@ function atualizarCabecalhosJul() {
     totRest += ex.rest; totProj += ex.projVenda; totObjMes += ex.objMes; totObjDia += ex.objDia;
     totDia += ex.diaUlt; totAntes += ex.acumAntes; totAcum += ex.acum;
   });
-  var pctTotalBrasil = (typeof pctTotalJul !== 'undefined') ? pctTotalJul : 0;
+  var pctTotalBrasil = (typeof pctTotalMes !== 'undefined') ? pctTotalMes : 0;
   html += '<tr class="total-row"><td>BRASIL TOTAL</td><td class="num">' + fmtN(totRest) + '</td><td class="num">' + fmtR(totProj) + '</td>'
     + '<td class="num">' + fmtR(totObjMes) + '</td><td class="num">' + fmtR(totObjDia) + '</td>'
     + '<td class="num" style="background:#ede9fe;color:#6d28d9;font-weight:700">' + fmtR(totDia) + '</td><td class="num">' + fmtR(totAntes) + '</td>'
@@ -2005,97 +1469,97 @@ function atualizarCabecalhosJul() {
   tbody.innerHTML = html;
 }
 
-function initJul() {
-  atualizarCabecalhosJul();
-  var hasData = brasilJulVals.filter(function(v){ return v !== null; }).length > 0;
-  var julLabels = julDias.map(function(d){ return d+'/Jul'; });
-  var metaJulArr = Array(julDias.length).fill(metaDiaBrasilJul);
+function initMesAtual() {
+  atualizarCabecalhos();
+  var hasData = brasilMesVals.filter(function(v){ return v !== null; }).length > 0;
+  var diasLabelsMes = mesDias.map(function(d){ return d+'/'+MES_NOME; });
+  var metaMesArr = Array(mesDias.length).fill(metaDiaMes);
 
   if (hasData) {
-    var totalAcumJul = 0;
-    julNames.forEach(function(r){ totalAcumJul += (julExtraData[r].acum||0); });
+    var totalAcumMes = 0;
+    mesNames.forEach(function(r){ totalAcumMes += (mesExtra[r].acum||0); });
 
-    var validVals = brasilJulVals.filter(function(v){ return v !== null; });
+    var validVals = brasilMesVals.filter(function(v){ return v !== null; });
     var maxVal = Math.max.apply(null, validVals);
     var minVal = Math.min.apply(null, validVals);
-    var maxIdx = brasilJulVals.indexOf(maxVal);
-    var minIdx = brasilJulVals.indexOf(minVal);
+    var maxIdx = brasilMesVals.indexOf(maxVal);
+    var minIdx = brasilMesVals.indexOf(minVal);
 
-    document.getElementById('jul-total-val').textContent = fmtR(totalAcumJul);
-    document.getElementById('jul-worst-val').textContent = fmtR(maxVal);
-    document.getElementById('jul-worst-sub').textContent = 'Dia ' + julDias[maxIdx] + '/Jul';
-    document.getElementById('jul-best-val').textContent = fmtR(minVal);
-    document.getElementById('jul-best-sub').textContent = 'Dia ' + julDias[minIdx] + '/Jul';
+    document.getElementById('atual-total-val').textContent = fmtR(totalAcumMes);
+    document.getElementById('atual-worst-val').textContent = fmtR(maxVal);
+    document.getElementById('atual-worst-sub').textContent = 'Dia ' + mesDias[maxIdx] + '/'+MES_NOME;
+    document.getElementById('atual-best-val').textContent = fmtR(minVal);
+    document.getElementById('atual-best-sub').textContent = 'Dia ' + mesDias[minIdx] + '/'+MES_NOME;
 
     var diasPassados = validVals.length;
-    var mediaDiaria = totalAcumJul / diasPassados;
-    var projFech = totalAcumJul + mediaDiaria * (31 - diasPassados);
-    document.getElementById('jul-proj-val').textContent = fmtR(projFech);
-    document.getElementById('jul-proj-sub').textContent = 'Acumulado + Média/Dia × Dias Restantes (' + (31-diasPassados) + ' dias)';
+    var mediaDiaria = totalAcumMes / diasPassados;
+    var projFech = totalAcumMes + mediaDiaria * (MES_DIAS - diasPassados);
+    document.getElementById('atual-proj-val').textContent = fmtR(projFech);
+    document.getElementById('atual-proj-sub').textContent = 'Acumulado + Média/Dia × Dias Restantes (' + (MES_DIAS-diasPassados) + ' dias)';
 
-    new Chart(document.getElementById('jul-bar-brasil'), {
+    new Chart(document.getElementById('atual-bar-brasil'), {
       type:'bar',
-      data:{ labels:julLabels, datasets:[
-        {label:'Perda (R$)', data:brasilJulVals,
-         backgroundColor:brasilJulVals.map(function(v){ return v===null?'rgba(0,0,0,0)':v>metaDiaBrasilJul?'rgba(192,57,43,.8)':'rgba(26,138,82,.8)'; }), borderRadius:4},
-        {label:'Meta/Dia', data:metaJulArr, type:'line', borderColor:'#2d3be0', borderWidth:2.5, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
+      data:{ labels:diasLabelsMes, datasets:[
+        {label:'Perda (R$)', data:brasilMesVals,
+         backgroundColor:brasilMesVals.map(function(v){ return v===null?'rgba(0,0,0,0)':v>metaDiaMes?'rgba(192,57,43,.8)':'rgba(26,138,82,.8)'; }), borderRadius:4},
+        {label:'Meta/Dia', data:metaMesArr, type:'line', borderColor:'#2d3be0', borderWidth:2.5, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
       ]},
       options: Object.assign({},baseOpts)
     });
-    new Chart(document.getElementById('jul-line-brasil'), {
+    new Chart(document.getElementById('atual-line-brasil'), {
       type:'line',
-      data:{ labels:julLabels, datasets:[
-        {label:'Perda (R$)', data:brasilJulVals, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,.1)', tension:.3, fill:true, pointRadius:3},
-        {label:'Meta/Dia', data:metaJulArr, borderColor:'#2d3be0', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
+      data:{ labels:diasLabelsMes, datasets:[
+        {label:'Perda (R$)', data:brasilMesVals, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,.1)', tension:.3, fill:true, pointRadius:3},
+        {label:'Meta/Dia', data:metaMesArr, borderColor:'#2d3be0', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
       ]},
       options: Object.assign({},baseOpts)
     });
   }
 
-  var tabsEl  = document.getElementById('reg-tabs-jul');
-  var panelsEl = document.getElementById('reg-panels-jul');
+  var tabsEl  = document.getElementById('reg-tabs-atual');
+  var panelsEl = document.getElementById('reg-panels-atual');
 
-  julNames.forEach(function(reg, idx) {
-    var vals = julData[reg];
-    var ex   = julExtraData[reg];
+  mesNames.forEach(function(reg, idx) {
+    var vals = mesData[reg];
+    var ex   = mesExtra[reg];
     var meta = ex.objDia || 0;
-    var slug = 'jul_' + idx;
+    var slug = 'atual_' + idx;
     var cleanVals = vals.filter(function(v){ return v!==null && v!==undefined; });
     var avg = cleanVals.length ? cleanVals.reduce(function(a,b){return a+b;},0)/cleanVals.length : 0;
     var worstVal = cleanVals.length ? Math.max.apply(null,cleanVals) : 0;
     var bestVal  = cleanVals.length ? Math.min.apply(null,cleanVals) : 0;
-    var worstDay = julDias[vals.indexOf(worstVal)];
-    var bestDay  = julDias[vals.indexOf(bestVal)];
-    var metaLine = Array(julDias.length).fill(meta);
+    var worstDay = mesDias[vals.indexOf(worstVal)];
+    var bestDay  = mesDias[vals.indexOf(bestVal)];
+    var metaLine = Array(mesDias.length).fill(meta);
     var barColors= vals.map(function(v){ return v===null||v===undefined?'rgba(0,0,0,0)':(v>meta?'rgba(192,57,43,.8)':'rgba(26,138,82,.8)'); });
 
     var tabBtn = document.createElement('button');
     tabBtn.className = 'reg-tab' + (idx===0?' active':'');
     tabBtn.textContent = (typeof LABEL_REG !== 'undefined' && LABEL_REG[reg]) ? LABEL_REG[reg] : reg;
     tabBtn.onclick = function(){
-      document.querySelectorAll('#reg-tabs-jul .reg-tab').forEach(function(b){ b.classList.remove('active'); });
-      document.querySelectorAll('#reg-panels-jul .reg-panel').forEach(function(p){ p.classList.remove('active'); });
+      document.querySelectorAll('#reg-tabs-atual .reg-tab').forEach(function(b){ b.classList.remove('active'); });
+      document.querySelectorAll('#reg-panels-atual .reg-panel').forEach(function(p){ p.classList.remove('active'); });
       this.classList.add('active');
-      document.getElementById('panel-jul-'+slug).classList.add('active');
+      document.getElementById('panel-atual-'+slug).classList.add('active');
     };
     tabsEl.appendChild(tabBtn);
 
     var panel = document.createElement('div');
     panel.className = 'reg-panel' + (idx===0?' active':'');
-    panel.id = 'panel-jul-' + slug;
+    panel.id = 'panel-atual-' + slug;
 
     var rows = '';
-    julDias.forEach(function(dia, i) {
+    mesDias.forEach(function(dia, i) {
       var v = vals[i];
       var vsMeta = v!=null ? v-meta : null;
       var isW = v===worstVal && cleanVals.length>0, isB = v===bestVal && cleanVals.length>0;
       var bg = v==null?'':v>meta?'background:#fff5f5':'background:#f5fff9';
       var vsStr = vsMeta!=null ? ('<span class="'+(vsMeta>0?'delta-neg':'delta-pos')+'">'+(vsMeta>0?'+':'')+fmtR(vsMeta)+'</span>') : '<span class="muted">—</span>';
       var diaNum = dia < 10 ? '0'+dia : ''+dia;
-    var diaISO = '2026-07-'+diaNum;
-    var hasDetalhe = detAgg && detAgg[reg] && detAgg[reg].porDia && detAgg[reg].porDia[diaISO];
-    var clickAttr = hasDetalhe ? ' onclick="openDrillDown(\'' + reg + '\',\''+diaISO+'\',\'' + dia + '/Jul\')" class="det-row-clickable"' : '';
-    rows += '<tr style="'+bg+'"'+clickAttr+'><td>'+dia+'/Jul'+(isW?' 🔴':isB?' 🟢':'')+'</td><td class="num">'+(v!=null?fmtR(v):'<span class="muted">—</span>')+'</td><td class="num">'+fmtR(meta)+'</td><td class="num">'+vsStr+'</td></tr>';
+    var diaISO = MES_ISO+'-'+diaNum;
+    var hasDetalhe = v != null;
+    var clickAttr = hasDetalhe ? ' onclick="openDrillDown(\'' + reg + '\',\''+diaISO+'\',\'' + dia + '/'+MES_NOME+'\')" class="det-row-clickable"' : '';
+    rows += '<tr style="'+bg+'"'+clickAttr+'><td>'+dia+'/'+MES_NOME+(isW?' 🔴':isB?' 🟢':'')+'</td><td class="num">'+(v!=null?fmtR(v):'<span class="muted">—</span>')+'</td><td class="num">'+fmtR(meta)+'</td><td class="num">'+vsStr+'</td></tr>';
     });
     var diasN = cleanVals.length || 1;
     rows += '<tr class="total-row"><td>Total</td><td class="num">'+fmtR(ex.acum)+'</td><td class="num">'+fmtR(meta*diasN)+'</td><td class="num"><span class="'+(ex.acum-meta*diasN>0?'delta-neg':'delta-pos')+'">'+(ex.acum-meta*diasN>0?'+':'')+fmtR(ex.acum-meta*diasN)+'</span></td></tr>';
@@ -2106,8 +1570,8 @@ function initJul() {
       '<div class="reg-card"><div class="label">Total MTD</div><div class="value">'+fmtR(ex.acum)+'</div></div>' +
       '<div class="reg-card"><div class="label">Média/Dia</div><div class="value">'+fmtR(avg||0)+'</div></div>' +
       '<div class="reg-card"><div class="label">Status</div><div class="value" style="font-size:.9rem">'+fmt(ex.pctMes,1)+'%</div><span style="margin-top:6px;display:inline-block">'+badge(ex.pctMes)+'</span></div>' +
-      '<div class="reg-card"><div class="label">Pior Dia</div><div class="value" style="color:#c0392b">'+(cleanVals.length?worstDay+'/Jul':'—')+'</div><div class="sub">'+fmtR(worstVal||0)+'</div></div>' +
-      '<div class="reg-card"><div class="label">Melhor Dia</div><div class="value" style="color:#1a8a52">'+(cleanVals.length?bestDay+'/Jul':'—')+'</div><div class="sub">'+fmtR(bestVal||0)+'</div></div>' +
+      '<div class="reg-card"><div class="label">Pior Dia</div><div class="value" style="color:#c0392b">'+(cleanVals.length?worstDay+'/'+MES_NOME:'—')+'</div><div class="sub">'+fmtR(worstVal||0)+'</div></div>' +
+      '<div class="reg-card"><div class="label">Melhor Dia</div><div class="value" style="color:#1a8a52">'+(cleanVals.length?bestDay+'/'+MES_NOME:'—')+'</div><div class="sub">'+fmtR(bestVal||0)+'</div></div>' +
       '</div>' +
       '<div class="chart-row">' +
       '<div class="chart-box"><h2>'+reg+' — Perda/Dia vs Meta</h2><canvas id="bar-'+slug+'"></canvas></div>' +
@@ -2117,7 +1581,7 @@ function initJul() {
       '<div class="mtd-table-wrap"><table><thead><tr><th>Dia</th><th class="num">Perda (R$)</th><th class="num">Meta (R$)</th><th class="num">vs Meta</th></tr></thead>' +
       '<tbody>'+rows+'</tbody></table></div>' +
       '</div>' +
-      '<div class="det-content det-content-open" id="det-jul-' + reg.replace(/[^a-zA-Z0-9]/g,'_') + '"><p class="det-vazio">Nenhum detalhamento carregado.</p></div>';
+      '<div class="det-content det-content-open" id="det-atual-' + reg.replace(/[^a-zA-Z0-9]/g,'_') + '"><p class="det-vazio">Nenhum detalhamento carregado.</p></div>';
     panelsEl.appendChild(panel);
 
     if (cleanVals.length === 0) return;
@@ -2140,84 +1604,84 @@ function initJul() {
           options: Object.assign({},baseOpts)
         });
       }, 100);
-    })(slug, vals, metaLine, barColors, julLabels);
+    })(slug, vals, metaLine, barColors, diasLabelsMes);
   });
 
   // Aguardar DOM completo antes de gerar textos e detalhamento
   setTimeout(function() {
-    gerarComentarioJul();
-    gerarMudancasJul();
+    gerarComentarioMes();
+    gerarMudancasMes();
     // Renderizar detalhamento (detAgg já vem embutido no HTML deste ciclo)
     if (typeof detAgg === 'object' && detAgg) {
-      julNames.forEach(function(reg) {
+      mesNames.forEach(function(reg) {
         try { renderDetalhe(reg); } catch(e) { console.error('renderDetalhe erro em ' + reg + ':', e); }
       });
     }
-    try { renderJulTotalDetalhe(); } catch(e) { console.error('renderJulTotalDetalhe erro:', e); }
+    try { renderTotalDetalhe(); } catch(e) { console.error('renderTotalDetalhe erro:', e); }
   }, 800);
 }
 
-function gerarComentarioJul() {
+function gerarComentarioMes() {
   try {
   var ultimoDia = 0;
   var idxUlt = -1;
-  for (var i = brasilJulVals.length-1; i >= 0; i--) {
-    if (brasilJulVals[i] !== null) { ultimoDia = julDias[i]; idxUlt = i; break; }
+  for (var i = brasilMesVals.length-1; i >= 0; i--) {
+    if (brasilMesVals[i] !== null) { ultimoDia = mesDias[i]; idxUlt = i; break; }
   }
-  var txtEl = document.getElementById('jul-comentario-texto');
-  var titEl = document.getElementById('jul-comentario-titulo');
-  if (idxUlt === -1 || !brasilJulVals[idxUlt]) {
-    if (txtEl) txtEl.textContent = 'Aguardando dados do primeiro dia de julho.';
+  var txtEl = document.getElementById('atual-comentario-texto');
+  var titEl = document.getElementById('atual-comentario-titulo');
+  if (idxUlt === -1 || !brasilMesVals[idxUlt]) {
+    if (txtEl) txtEl.textContent = 'Carregando…';
     return;
   }
   function fmtC(v){ return 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-  var totalDia = brasilJulVals[idxUlt];
+  var totalDia = brasilMesVals[idxUlt];
   var regValores = [];
-  julNames.forEach(function(reg) {
-    var ex = julExtraData[reg];
+  mesNames.forEach(function(reg) {
+    var ex = mesExtra[reg];
     if (ex && ex.diaUlt > 0) regValores.push({ reg: reg, val: ex.diaUlt });
   });
   regValores.sort(function(a,b){ return b.val - a.val; });
   var maiores = regValores.slice(0,3);
   var menores = regValores.slice(-3).reverse();
   var totalAcum = 0;
-  julNames.forEach(function(r){ totalAcum += (julExtraData[r].acum||0); });
-  var diasPassados = brasilJulVals.filter(function(v){ return v!==null; }).length;
+  mesNames.forEach(function(r){ totalAcum += (mesExtra[r].acum||0); });
+  var diasPassados = brasilMesVals.filter(function(v){ return v!==null; }).length;
   var mediaDiaria = totalAcum / diasPassados;
-  var projFech = totalAcum + mediaDiaria * (31 - diasPassados);
-  var atingiuMeta = totalDia <= metaDiaBrasilJul;
+  var projFech = totalAcum + mediaDiaria * (MES_DIAS - diasPassados);
+  var atingiuMeta = totalDia <= metaDiaMes;
   var metaMsg = atingiuMeta
-    ? '<strong style="color:#065f46">✅ Meta diária atingida!</strong> A perda de ' + fmtC(totalDia) + ' ficou abaixo do objetivo de ' + fmtC(metaDiaBrasilJul) + '.'
-    : '<strong style="color:#991b1b">❌ Meta diária não atingida.</strong> A perda de ' + fmtC(totalDia) + ' superou o objetivo de ' + fmtC(metaDiaBrasilJul) + '.';
-  var txt = 'No dia <strong>' + ultimoDia + '/Jul/2026</strong>: ' + metaMsg + '<br>' +
+    ? '<strong style="color:#065f46">✅ Meta diária atingida!</strong> A perda de ' + fmtC(totalDia) + ' ficou abaixo do objetivo de ' + fmtC(metaDiaMes) + '.'
+    : '<strong style="color:#991b1b">❌ Meta diária não atingida.</strong> A perda de ' + fmtC(totalDia) + ' superou o objetivo de ' + fmtC(metaDiaMes) + '.';
+  var txt = 'No dia <strong>' + ultimoDia + '/'+MES_NOME+'/'+MES_ANO+'</strong>: ' + metaMsg + '<br>' +
     (maiores.length ? 'Maiores perdas: ' + maiores.map(function(d){ return '<strong>'+d.reg+'</strong> ('+fmtC(d.val)+')'; }).join(', ') + '. ' : '') +
     (menores.length ? 'Menores perdas: ' + menores.map(function(d){ return '<strong>'+d.reg+'</strong> ('+fmtC(d.val)+')'; }).join(', ') + '. ' : '') +
-    'Acumulado Jul: <strong>' + fmtC(totalAcum) + '</strong>. ' +
+    'Acumulado '+MES_NOME+': <strong>' + fmtC(totalAcum) + '</strong>. ' +
     'Projeção fechamento: <strong style="color:#6d28d9">' + fmtC(projFech) + '</strong>.';
-  if (titEl) titEl.textContent = 'Comentário do Dia - ' + ultimoDia + '/Jul/2026';
+  if (titEl) titEl.textContent = 'Comentário do Dia - ' + ultimoDia + '/'+MES_NOME+'/'+MES_ANO;
   if (txtEl) txtEl.innerHTML = txt;
-  } catch(e) { console.error('gerarComentarioJul erro:', e); }
+  } catch(e) { console.error('gerarComentarioMes erro:', e); }
 }
 
-function gerarMudancasJul() {
-  var box = document.getElementById('mudancas-jul-texto');
+function gerarMudancasMes() {
+  var box = document.getElementById('mudancas-atual-texto');
   if (!box) return;
   function fmtPct(v){ return v.toFixed(1).replace('.',',') + '%'; }
   function fmtK(v){ return 'R$ ' + (v/1000000).toFixed(1).replace('.',',') + 'M'; }
-  var diasComDados = brasilJulVals.filter(function(v){ return v !== null; }).length;
-  var labelAtual    = diasComDados >= 1 ? (julDias[diasComDados-1] + '/Jul') : 'Dia atual';
-  var labelAnterior = diasComDados >= 2 ? (julDias[diasComDados-2] + '/Jul') : 'Dia anterior';
+  var diasComDados = brasilMesVals.filter(function(v){ return v !== null; }).length;
+  var labelAtual    = diasComDados >= 1 ? (mesDias[diasComDados-1] + '/'+MES_NOME) : 'Dia atual';
+  var labelAnterior = diasComDados >= 2 ? (mesDias[diasComDados-2] + '/'+MES_NOME) : 'Dia anterior';
   var mudancas = [];
-  var pctAnt = julAnterior.pctTotal;
-  var pctAtu = pctTotalJul;
+  var pctAnt = mesAnterior.pctTotal;
+  var pctAtu = pctTotalMes;
   if (pctAtu > 0 && Math.abs(pctAtu - pctAnt) >= 0.05) {
     var st = pctAtu > pctAnt ? 'Subiu!' : 'Desceu!';
     var cor = pctAtu > pctAnt ? '#991b1b' : '#065f46';
     mudancas.push({ ind: 'Brasil Total %', ant: fmtPct(pctAnt), atu: fmtPct(pctAtu), st: st, cor: cor });
   }
-  julNames.forEach(function(reg){
-    var pctAntReg = julAnterior.regionais[reg] || 0;
-    var pctAtuReg = julExtraData[reg].pctMes || 0;
+  mesNames.forEach(function(reg){
+    var pctAntReg = mesAnterior.regionais[reg] || 0;
+    var pctAtuReg = mesExtra[reg].pctMes || 0;
     if (pctAtuReg > 0 && (Math.abs(pctAtuReg - pctAntReg) >= 0.05 || (pctAntReg < 1.0 && pctAtuReg >= 1.0) || (pctAntReg >= 1.0 && pctAtuReg < 1.0))) {
       var st = '', cor = '';
       if (pctAtuReg >= 1.0 && pctAntReg < 1.0) { st = 'Acima'; cor = '#991b1b'; }
@@ -2228,16 +1692,16 @@ function gerarMudancasJul() {
     }
   });
   var totalAcumMud = 0;
-  julNames.forEach(function(r){ totalAcumMud += (julExtraData[r].acum||0); });
+  mesNames.forEach(function(r){ totalAcumMud += (mesExtra[r].acum||0); });
   if (totalAcumMud > 0) {
-    var diasP = brasilJulVals.filter(function(v){ return v!==null; }).length;
-    var projAtu = diasP > 0 ? totalAcumMud + (totalAcumMud/diasP)*(31-diasP) : 0;
-    var stProj = projAtu > julAnterior.projFechamento ? 'Subiu' : 'Desceu';
-    var corProj = projAtu > julAnterior.projFechamento ? '#ca8a04' : '#065f46';
-    mudancas.push({ ind: 'Proj. Fechamento', ant: fmtK(julAnterior.projFechamento), atu: fmtK(projAtu), st: stProj, cor: corProj });
+    var diasP = brasilMesVals.filter(function(v){ return v!==null; }).length;
+    var projAtu = diasP > 0 ? totalAcumMud + (totalAcumMud/diasP)*(MES_DIAS-diasP) : 0;
+    var stProj = projAtu > mesAnterior.projFechamento ? 'Subiu' : 'Desceu';
+    var corProj = projAtu > mesAnterior.projFechamento ? '#ca8a04' : '#065f46';
+    mudancas.push({ ind: 'Proj. Fechamento', ant: fmtK(mesAnterior.projFechamento), atu: fmtK(projAtu), st: stProj, cor: corProj });
   }
   if (mudancas.length === 0) {
-    box.innerHTML = '<p style="color:#64748b;font-size:0.9rem;margin:0;">Aguardando dados de julho para comparação.</p>';
+    box.innerHTML = '<p style="color:#64748b;font-size:0.9rem;margin:0;">Aguardando dados do mês para comparação.</p>';
     return;
   }
   var html = '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;"><thead><tr style="border-bottom:2px solid #e2e8f0;"><th style="text-align:left;padding:8px 12px;color:#334155;font-weight:600;">Indicador</th><th style="text-align:center;padding:8px 12px;color:#334155;font-weight:600;">Antes (' + labelAnterior + ')</th><th style="text-align:center;padding:8px 12px;color:#334155;font-weight:600;">Agora (' + labelAtual + ')</th><th style="text-align:center;padding:8px 12px;color:#334155;font-weight:600;">Alerta</th></tr></thead><tbody>';
@@ -2267,52 +1731,45 @@ function fmtDtBR(iso) {
 }
 
 
-function toggleDet(btn) {
-  var c = btn.nextElementSibling;
-  var open = c.style.display !== 'none';
-  c.style.display = open ? 'none' : 'block';
-  btn.innerHTML = (open ? '&#9654;' : '&#9660;') + ' Detalhamento por Loja / Categoria / Canal';
-}
 
 // ============================================================
-// SUB-ABAS "TOTAL" / "REGIONAIS" — Por Regional Jul/2026 Dia a Dia
+// SUB-ABAS "TOTAL" / "REGIONAIS" — mês corrente dia a dia
 // ============================================================
-function setJulSubView(sub) {
-  document.querySelectorAll('#jul-subview-toggle .subview-btn').forEach(function(b){
+function setSubView(sub) {
+  document.querySelectorAll('#atual-subview-toggle .subview-btn').forEach(function(b){
     b.classList.remove('active'); b.setAttribute('aria-selected','false');
   });
   document.querySelectorAll('.subview-panel').forEach(function(p){ p.classList.remove('active'); });
-  var btn = document.getElementById('subbtn-jul-' + sub);
-  var panel = document.getElementById('subview-jul-' + sub);
+  var btn = document.getElementById('subbtn-atual-' + sub);
+  var panel = document.getElementById('subview-atual-' + sub);
   if (btn) { btn.classList.add('active'); btn.setAttribute('aria-selected','true'); }
   if (panel) panel.classList.add('active');
-  if (sub === 'total') renderJulTotalDetalhe();
+  if (sub === 'total') renderTotalDetalhe();
 }
 
-function renderJulTotalDetalhe() {
-  var container = document.getElementById('jul-total-content');
-  if (!container || typeof julNames === 'undefined') return;
+function renderTotalDetalhe() {
+  var container = document.getElementById('atual-total-content');
+  if (!container || typeof mesNames === 'undefined') return;
 
-  var meta = metaDiaBrasilJul;
-  var cleanVals = brasilJulVals.filter(function(v){ return v !== null; });
+  var meta = metaDiaMes;
+  var cleanVals = brasilMesVals.filter(function(v){ return v !== null; });
   var totalAcum = cleanVals.reduce(function(a,b){ return a+b; }, 0);
   var worstVal = cleanVals.length ? Math.max.apply(null, cleanVals) : 0;
   var bestVal  = cleanVals.length ? Math.min.apply(null, cleanVals) : 0;
-  var worstDay = julDias[brasilJulVals.indexOf(worstVal)];
-  var bestDay  = julDias[brasilJulVals.indexOf(bestVal)];
+  var worstDay = mesDias[brasilMesVals.indexOf(worstVal)];
+  var bestDay  = mesDias[brasilMesVals.indexOf(bestVal)];
 
   var rows = '';
-  julDias.forEach(function(dia, i) {
-    var v = brasilJulVals[i];
+  mesDias.forEach(function(dia, i) {
+    var v = brasilMesVals[i];
     var vsMeta = v != null ? v - meta : null;
     var isW = v === worstVal && cleanVals.length > 0, isB = v === bestVal && cleanVals.length > 0;
     var bg = v == null ? '' : v > meta ? 'background:#fff5f5' : 'background:#f5fff9';
     var vsStr = vsMeta != null ? ('<span class="'+(vsMeta>0?'delta-neg':'delta-pos')+'">'+(vsMeta>0?'+':'')+fmtR(vsMeta)+'</span>') : '<span class="muted">—</span>';
-    var diaISO = '2026-07-' + (dia < 10 ? '0'+dia : dia);
-    var temDet = v != null && typeof detAgg !== 'undefined' && detAgg &&
-                 julNames.some(function(r){ return detAgg[r] && detAgg[r].porDia && detAgg[r].porDia[diaISO]; });
-    var clickAttr = temDet ? ' onclick="openBrasilDrillDown(\''+diaISO+'\',\''+dia+'/Jul\')" class="det-row-clickable"' : '';
-    rows += '<tr'+clickAttr+' style="'+bg+'"><td>'+dia+'/Jul'+(isW?' 🔴':isB?' 🟢':'')+'</td><td class="num">'+(v!=null?fmtR(v):'<span class="muted">—</span>')+'</td><td class="num">'+fmtR(meta)+'</td><td class="num">'+vsStr+'</td></tr>';
+    var diaISO = MES_ISO+'-' + (dia < 10 ? '0'+dia : dia);
+    var temDet = v != null;
+    var clickAttr = temDet ? ' onclick="openBrasilDrillDown(\''+diaISO+'\',\''+dia+'/'+MES_NOME+'\')" class="det-row-clickable"' : '';
+    rows += '<tr'+clickAttr+' style="'+bg+'"><td>'+dia+'/'+MES_NOME+(isW?' 🔴':isB?' 🟢':'')+'</td><td class="num">'+(v!=null?fmtR(v):'<span class="muted">—</span>')+'</td><td class="num">'+fmtR(meta)+'</td><td class="num">'+vsStr+'</td></tr>';
   });
   var diasN = cleanVals.length || 1;
   var deltaTotal = totalAcum - meta*diasN;
@@ -2321,7 +1778,7 @@ function renderJulTotalDetalhe() {
   // Agregar detAgg de todas as regionais em um único total Brasil
   var agg = { totalPerda: 0, oc: 0, lojas: {}, cats: {}, porDia: {} };
   var temDetalhe = false;
-  julNames.forEach(function(reg) {
+  mesNames.forEach(function(reg) {
     var d = detAgg && detAgg[reg];
     if (!d) return;
     temDetalhe = true;
@@ -2385,11 +1842,11 @@ function renderJulTotalDetalhe() {
       + ' &nbsp;|&nbsp; ' + agg.oc + ' ocorrências</div>'
       + '<div class="det-grid">'
         + '<div class="det-box"><h4>Top 10 Lojas — Brasil</h4>' + lojasHTML + lojasTotalHTML + '</div>'
-        + '<div class="det-box"><h4>Categoria — Brasil</h4><canvas id="det-cat-jul-total" height="200"></canvas></div>'
+        + '<div class="det-box"><h4>Categoria — Brasil</h4><canvas id="det-cat-atual-total" height="200"></canvas></div>'
       + '</div>'
       + '<div class="det-box" style="margin-bottom:16px">'
         + '<h4>Evolução por Dia — Brasil <span style="font-weight:400;color:#94a3b8;text-transform:none;letter-spacing:0">' + periodo + '</span></h4>'
-        + '<canvas id="det-dia-jul-total" height="90"></canvas>'
+        + '<canvas id="det-dia-atual-total" height="90"></canvas>'
       + '</div>';
   }
 
@@ -2402,7 +1859,7 @@ function renderJulTotalDetalhe() {
 
   if (temDetalhe) {
     setTimeout(function() {
-      var ctxC = document.getElementById('det-cat-jul-total');
+      var ctxC = document.getElementById('det-cat-atual-total');
       if (ctxC && catsOrd.length) {
         var cats8 = catsOrd.slice(0, 8);
         new Chart(ctxC, {
@@ -2417,7 +1874,7 @@ function renderJulTotalDetalhe() {
           }
         });
       }
-      var ctxD = document.getElementById('det-dia-jul-total');
+      var ctxD = document.getElementById('det-dia-atual-total');
       if (ctxD && diasK.length) {
         new Chart(ctxD, {
           type: 'line',
@@ -2438,7 +1895,7 @@ function renderJulTotalDetalhe() {
 
 function renderDetalhe(reg) {
   var slug = reg.replace(/[^a-zA-Z0-9]/g, '_');
-  var el = document.getElementById('det-jul-' + slug);
+  var el = document.getElementById('det-atual-' + slug);
   if (!el) return;
   var d = detAgg[reg];
   if (!d) {
@@ -2553,9 +2010,9 @@ function openDrillDown(reg, diaISO, diaLabel) {
   }
 
   var p = d.porDia[diaISO]; // { total, oc, canais, cats[], lojas[], horas{}, ocs[] }
-  var ex = (typeof julExtraData !== 'undefined' && julExtraData[reg]) ? julExtraData[reg] : null;
+  var ex = (typeof mesExtra !== 'undefined' && mesExtra[reg]) ? mesExtra[reg] : null;
   var pctMes  = d.totalPerda > 0 ? (p.total / d.totalPerda * 100).toFixed(1) : '0.0';
-  var diasCom = brasilJulVals.filter(function(v){ return v !== null; }).length || 1;
+  var diasCom = brasilMesVals.filter(function(v){ return v !== null; }).length || 1;
   var mediaDia = d.totalPerda / diasCom;
   var vsMedia = p.total - mediaDia;
   var vsObj   = ex ? p.total - ex.objDia : null;
@@ -2712,7 +2169,7 @@ function openBrasilDrillDown(diaISO, diaLabel) {
 
   var tot = 0, oc = 0, mesTotal = 0;
   var cats = {}, lojas = {}, horas = {}, ocs = [];
-  julNames.forEach(function(reg) {
+  mesNames.forEach(function(reg) {
     var d = detAgg && detAgg[reg];
     if (!d) return;
     mesTotal += d.totalPerda || 0;
@@ -2744,9 +2201,9 @@ function openBrasilDrillDown(diaISO, diaLabel) {
 
   var lbl = function(r){ return (typeof LABEL_REG !== 'undefined' && LABEL_REG[r]) ? LABEL_REG[r] : r; };
   var pctMes  = mesTotal > 0 ? (tot / mesTotal * 100).toFixed(1) : '0.0';
-  var diasCom = brasilJulVals.filter(function(v){ return v !== null; }).length || 1;
+  var diasCom = brasilMesVals.filter(function(v){ return v !== null; }).length || 1;
   var mediaDia = mesTotal / diasCom;
-  var vsMeta  = tot - metaDiaBrasilJul;
+  var vsMeta  = tot - metaDiaMes;
   var vsMedia = tot - mediaDia;
   var nLojas  = Object.keys(lojas).length;
   var ticket  = oc > 0 ? tot / oc : 0;
@@ -2766,7 +2223,7 @@ function openBrasilDrillDown(diaISO, diaLabel) {
   }
   var headerHTML = '<div class="dd-header">'
     + card('Perda no Dia (Brasil)', fmtD(tot), '#991b1b')
-    + card('vs Meta/Dia', (vsMeta>0?'+':'') + fmtDk(vsMeta), vsMeta>0?'#991b1b':'#065f46', 'Meta ' + fmtDk(metaDiaBrasilJul))
+    + card('vs Meta/Dia', (vsMeta>0?'+':'') + fmtDk(vsMeta), vsMeta>0?'#991b1b':'#065f46', 'Meta ' + fmtDk(metaDiaMes))
     + card('vs Média do Mês', (vsMedia>0?'+':'') + fmtDk(vsMedia), vsMedia>0?'#ca8a04':'#065f46', 'Média ' + fmtDk(mediaDia))
     + card('Ocorrências', String(oc), '#475569', nLojas + ' lojas · ' + fmtDk(ticket) + '/oc')
     + card('% do Mês', pctMes + '%', '#475569', 'Acum. ' + fmtDk(mesTotal))
@@ -2895,6 +2352,210 @@ function closeDrillDown() {
 }
 
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDrillDown(); });
+
+// ============================================================
+// HISTÓRICO — meses arquivados (fechamentos), renderizados sob demanda
+// ============================================================
+var histRendered = false;
+function renderHistorico() {
+  if (histRendered) return;
+  histRendered = true;
+  var tabsEl = document.getElementById('hist-mes-tabs');
+  var panelsEl = document.getElementById('hist-mes-panels');
+  if (!historico || !historico.length) {
+    panelsEl.innerHTML = '<p style="color:#64748b">Nenhum mês arquivado ainda.</p>';
+    return;
+  }
+  historico.forEach(function(m, idx) {
+    var tab = document.createElement('button');
+    tab.className = 'reg-tab' + (idx===0?' active':'');
+    tab.textContent = m.nome + '/' + m.ano;
+    tab.onclick = function() {
+      document.querySelectorAll('#hist-mes-tabs .reg-tab').forEach(function(t){ t.classList.remove('active'); });
+      document.querySelectorAll('#hist-mes-panels > .reg-panel').forEach(function(p){ p.classList.remove('active'); });
+      tab.classList.add('active');
+      document.getElementById('hist_mes_'+idx).classList.add('active');
+    };
+    tabsEl.appendChild(tab);
+    buildHistMonthPanel(m, idx, panelsEl);
+  });
+}
+
+function buildHistMonthPanel(m, idx, mount) {
+  var nomes = Object.keys(m.data);
+  var lblR = function(r){ return (LABEL_REG && LABEL_REG[r]) ? LABEL_REG[r] : r; };
+  var sufMes = '/' + m.nome;
+  var dias = [];
+  for (var i = 1; i <= m.diasNoMes; i++) dias.push(i);
+  var vals = m.brasilVals;
+  var clean = vals.filter(function(v){ return v !== null; });
+  var totalAcum = 0;
+  nomes.forEach(function(r){ totalAcum += (m.extra[r].acum || 0); });
+  var maxVal = clean.length ? Math.max.apply(null, clean) : 0;
+  var minVal = clean.length ? Math.min.apply(null, clean) : 0;
+  var maxDia = dias[vals.indexOf(maxVal)];
+  var minDia = dias[vals.indexOf(minVal)];
+
+  var panel = document.createElement('div');
+  panel.className = 'reg-panel' + (idx===0?' active':'');
+  panel.id = 'hist_mes_' + idx;
+
+  var cardsHTML =
+    '<div class="cards">' +
+    '<div class="card"><div class="label">Total ' + m.nome + '/' + m.ano + '</div><div class="value">' + fmtR(totalAcum) + '</div><div class="sub">Fechamento (1–' + m.ultimoDia + sufMes + ')</div></div>' +
+    '<div class="card"><div class="label">Maior Perda/Dia</div><div class="value">' + fmtR(maxVal) + '</div><div class="sub">Dia ' + maxDia + sufMes + '</div></div>' +
+    '<div class="card"><div class="label">Menor Perda/Dia</div><div class="value">' + fmtR(minVal) + '</div><div class="sub">Dia ' + minDia + sufMes + '</div></div>' +
+    '<div class="card"><div class="label">Meta/Dia Brasil</div><div class="value">' + fmtR(m.metaDiaBrasil) + '</div><div class="sub">Objetivo diário</div></div>' +
+    '<div class="card card-destaque"><div class="label">% Oficial BI</div><div class="value">' + (m.pctTotal != null ? fmt(m.pctTotal,2)+'%' : '—') + '</div><div class="sub">' + (m.pctTotal != null ? badge(m.pctTotal) : 'Sem registro') + '</div></div>' +
+    '</div>';
+
+  var chartsHTML =
+    '<div class="chart-row">' +
+    '<div class="chart-box"><h2>Brasil — Perda por Dia + Meta (' + m.nome + '/' + m.ano + ')</h2><canvas id="hist-bar-' + idx + '"></canvas></div>' +
+    '<div class="chart-box"><h2>Brasil — Evolução Diária vs Meta</h2><canvas id="hist-line-' + idx + '"></canvas></div>' +
+    '</div>';
+
+  var rowsHTML = '';
+  var totRest=0, totProj=0, totObjMes=0, totObjDia=0, totAcum2=0;
+  nomes.forEach(function(reg) {
+    var ex = m.extra[reg];
+    rowsHTML += '<tr><td><strong>' + lblR(reg) + '</strong></td><td class="num">' + fmtN(ex.rest) + '</td>' +
+      '<td class="num">' + fmtR(ex.projVenda) + '</td><td class="num">' + fmtR(ex.objMes) + '</td>' +
+      '<td class="num">' + fmtR(ex.objDia) + '</td><td class="num"><strong>' + fmtR(ex.acum) + '</strong></td>' +
+      '<td class="num">' + fmtR(ex.perdaLoja) + '</td><td class="num">' + fmt(ex.pctMes,1) + '%</td>' +
+      '<td>' + badge(ex.pctMes) + '</td></tr>';
+    totRest+=ex.rest; totProj+=ex.projVenda; totObjMes+=ex.objMes; totObjDia+=ex.objDia; totAcum2+=ex.acum;
+  });
+  rowsHTML += '<tr class="total-row"><td>BRASIL TOTAL</td><td class="num">' + fmtN(totRest) + '</td>' +
+    '<td class="num">' + fmtR(totProj) + '</td><td class="num">' + fmtR(totObjMes) + '</td>' +
+    '<td class="num">' + fmtR(totObjDia) + '</td><td class="num"><strong>' + fmtR(totAcum2) + '</strong></td>' +
+    '<td class="num">—</td><td class="num"><strong>' + (m.pctTotal != null ? fmt(m.pctTotal,2)+'%' : '—') + '</strong></td>' +
+    '<td>' + (m.pctTotal != null ? badge(m.pctTotal) : '—') + '</td></tr>';
+
+  var tableHTML =
+    '<div class="section-divider"><h2>Resumo por Regional — ' + m.nome + '/' + m.ano + '</h2></div>' +
+    '<div class="table-wrap"><table>' +
+    '<thead><tr><th>Regional</th><th class="num">Rest.</th><th class="num">Proj. Venda</th><th class="num">Obj. Mês</th><th class="num">Obj. Dia</th><th class="num">Acumulado</th><th class="num">Loja/Dia</th><th class="num">%</th><th>Status</th></tr></thead>' +
+    '<tbody>' + rowsHTML + '</tbody></table></div>';
+
+  var top10HTML = '';
+  if (m.top10 && m.top10.length) {
+    top10HTML = '<div class="section-divider"><h2>Top 10 Restaurantes — Maior Perda ' + m.nome + '/' + m.ano + '</h2></div>' +
+      '<div style="overflow-x:auto;margin-bottom:28px;"><table>' +
+      '<thead><tr><th>#</th><th>Restaurante</th><th>Regional</th><th class="num">Total (R$)</th></tr></thead><tbody>' +
+      m.top10.map(function(t, i) {
+        return '<tr><td>' + (i+1) + '</td><td><strong>' + t.nome + '</strong></td><td>' + t.regional + '</td><td class="num">' + fmtR(t.total) + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  // por regional: tabs + gráficos + tabela dia a dia
+  var regTabsHTML = '<div class="section-divider"><h2>Por Regional — ' + m.nome + '/' + m.ano + ' Dia a Dia</h2></div>' +
+    '<div class="reg-tabs" id="hist-reg-tabs-' + idx + '"></div><div id="hist-reg-panels-' + idx + '"></div>';
+
+  panel.innerHTML = cardsHTML + chartsHTML + tableHTML + top10HTML + regTabsHTML;
+  mount.appendChild(panel);
+
+  // gráficos Brasil
+  var metaLine = Array(m.diasNoMes).fill(m.metaDiaBrasil);
+  var diasLbl = dias.map(function(d){ return d + sufMes; });
+  setTimeout(function() {
+    new Chart(document.getElementById('hist-bar-'+idx), {
+      type:'bar',
+      data:{ labels:diasLbl, datasets:[
+        {label:'Perda (R$)', data:vals, backgroundColor:vals.map(function(v){ return v===null?'rgba(0,0,0,0)':v>m.metaDiaBrasil?'rgba(192,57,43,.8)':'rgba(26,138,82,.8)'; }), borderRadius:4},
+        {label:'Meta/Dia', data:metaLine, type:'line', borderColor:'#2d3be0', borderWidth:2.5, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
+      ]},
+      options: Object.assign({},baseOpts)
+    });
+    new Chart(document.getElementById('hist-line-'+idx), {
+      type:'line',
+      data:{ labels:diasLbl, datasets:[
+        {label:'Perda (R$)', data:vals, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,.1)', tension:.3, fill:true, pointRadius:3},
+        {label:'Meta/Dia', data:metaLine, borderColor:'#2d3be0', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
+      ]},
+      options: Object.assign({},baseOpts)
+    });
+  }, 100);
+
+  var rTabs = panel.querySelector('#hist-reg-tabs-'+idx);
+  var rPanels = panel.querySelector('#hist-reg-panels-'+idx);
+  nomes.forEach(function(reg, ri) {
+    var rvals = m.data[reg];
+    var ex = m.extra[reg];
+    var meta = ex.objDia || 0;
+    var slug = 'hist_' + idx + '_' + ri;
+    var cleanR = rvals.filter(function(v){ return v!==null && v!==undefined; });
+    var avg = cleanR.length ? cleanR.reduce(function(a,b){return a+b;},0)/cleanR.length : 0;
+    var wV = cleanR.length ? Math.max.apply(null,cleanR) : 0;
+    var bV = cleanR.length ? Math.min.apply(null,cleanR) : 0;
+
+    var tabBtn = document.createElement('button');
+    tabBtn.className = 'reg-tab' + (ri===0?' active':'');
+    tabBtn.textContent = lblR(reg);
+    tabBtn.onclick = function(){
+      rTabs.querySelectorAll('.reg-tab').forEach(function(b){ b.classList.remove('active'); });
+      rPanels.querySelectorAll('.reg-panel').forEach(function(p){ p.classList.remove('active'); });
+      this.classList.add('active');
+      document.getElementById('panel-'+slug).classList.add('active');
+    };
+    rTabs.appendChild(tabBtn);
+
+    var rows = '';
+    dias.forEach(function(dia, i) {
+      var v = rvals[i];
+      var vsMeta = v!=null ? v-meta : null;
+      var bg = v==null?'':v>meta?'background:#fff5f5':'background:#f5fff9';
+      var vsStr = vsMeta!=null ? ('<span class="'+(vsMeta>0?'delta-neg':'delta-pos')+'">'+(vsMeta>0?'+':'')+fmtR(vsMeta)+'</span>') : '<span class="muted">—</span>';
+      rows += '<tr style="'+bg+'"><td>'+dia+sufMes+'</td><td class="num">'+(v!=null?fmtR(v):'<span class="muted">—</span>')+'</td><td class="num">'+fmtR(meta)+'</td><td class="num">'+vsStr+'</td></tr>';
+    });
+    var diasN = cleanR.length || 1;
+    rows += '<tr class="total-row"><td>Total</td><td class="num">'+fmtR(ex.acum)+'</td><td class="num">'+fmtR(meta*diasN)+'</td><td class="num"><span class="'+(ex.acum-meta*diasN>0?'delta-neg':'delta-pos')+'">'+(ex.acum-meta*diasN>0?'+':'')+fmtR(ex.acum-meta*diasN)+'</span></td></tr>';
+
+    var rp = document.createElement('div');
+    rp.className = 'reg-panel' + (ri===0?' active':'');
+    rp.id = 'panel-' + slug;
+    rp.innerHTML =
+      '<div class="reg-cards">' +
+      '<div class="reg-card"><div class="label">Meta/Dia</div><div class="value">'+fmtR(meta)+'</div></div>' +
+      '<div class="reg-card"><div class="label">Total</div><div class="value">'+fmtR(ex.acum)+'</div></div>' +
+      '<div class="reg-card"><div class="label">Média/Dia</div><div class="value">'+fmtR(avg)+'</div></div>' +
+      '<div class="reg-card"><div class="label">Status</div><div class="value" style="font-size:.9rem">'+fmt(ex.pctMes,1)+'%</div><span style="margin-top:6px;display:inline-block">'+badge(ex.pctMes)+'</span></div>' +
+      '</div>' +
+      '<div class="chart-row">' +
+      '<div class="chart-box"><h2>'+lblR(reg)+' — Perda/Dia vs Meta</h2><canvas id="hbar-'+slug+'"></canvas></div>' +
+      '<div class="chart-box"><h2>'+lblR(reg)+' — Evolução</h2><canvas id="hline-'+slug+'"></canvas></div>' +
+      '</div>' +
+      '<div class="chart-box" style="margin-bottom:20px"><h2>'+lblR(reg)+' — Detalhe Dia a Dia</h2>' +
+      '<div class="mtd-table-wrap"><table><thead><tr><th>Dia</th><th class="num">Perda (R$)</th><th class="num">Meta (R$)</th><th class="num">vs Meta</th></tr></thead>' +
+      '<tbody>'+rows+'</tbody></table></div></div>';
+    rPanels.appendChild(rp);
+
+    if (!cleanR.length) return;
+    (function(s, v, mt, lbl2) {
+      setTimeout(function(){
+        var metaL = Array(v.length).fill(mt);
+        var bc = v.map(function(x){ return x===null||x===undefined?'rgba(0,0,0,0)':(x>mt?'rgba(192,57,43,.8)':'rgba(26,138,82,.8)'); });
+        new Chart(document.getElementById('hbar-'+s), {
+          type:'bar',
+          data:{ labels:lbl2, datasets:[
+            {label:'Perda (R$)', data:v, backgroundColor:bc, borderRadius:4},
+            {label:'Meta/Dia', data:metaL, type:'line', borderColor:'#2d3be0', borderWidth:2.5, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
+          ]},
+          options: Object.assign({},baseOpts)
+        });
+        new Chart(document.getElementById('hline-'+s), {
+          type:'line',
+          data:{ labels:lbl2, datasets:[
+            {label:'Perda (R$)', data:v, borderColor:'#c0392b', backgroundColor:'rgba(192,57,43,.1)', tension:.3, fill:true, pointRadius:3},
+            {label:'Meta/Dia', data:metaL, borderColor:'#2d3be0', borderWidth:2, borderDash:[6,4], pointRadius:0, fill:false, tension:0}
+          ]},
+          options: Object.assign({},baseOpts)
+        });
+      }, 150);
+    })(slug, rvals, meta, diasLbl);
+  });
+}
 </script>
 
 <!-- Modal drill-down por dia -->

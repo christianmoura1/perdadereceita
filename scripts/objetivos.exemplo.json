@@ -1,0 +1,13 @@
+{
+  "BK É FOGO NORTE":        {"rest": null, "projVenda": null, "objMes": null, "objDia": null},
+  "BK É FOGO LESTE":        {"rest": null, "projVenda": null, "objMes": null, "objDia": null},
+  "BK É FOGO CENTRO LITORAL": {"rest": null, "projVenda": null, "objMes": null, "objDia": null},
+  "SP SUL":                 {"rest": null, "projVenda": null, "objMes": null, "objDia": null},
+  "SP INTERIOR NORTE":      {"rest": null, "projVenda": null, "objMes": null, "objDia": null},
+  "SP INTERIOR SUL":        {"rest": null, "projVenda": null, "objMes": null, "objDia": null},
+  "CENTRO OESTE":           {"rest": null, "projVenda": null, "objMes": null, "objDia": null},
+  "MINAS BAHIA":            {"rest": null, "projVenda": null, "objMes": null, "objDia": null},
+  "NE":                     {"rest": null, "projVenda": null, "objMes": null, "objDia": null},
+  "RJ":                     {"rest": null, "projVenda": null, "objMes": null, "objDia": null},
+  "SUL":                    {"rest": null, "projVenda": null, "objMes": null, "objDia": null}
+}
