@@ -557,14 +557,21 @@ body.sidebar-collapsed .sidebar-toggle-btn { color: var(--accent); border-color:
 
 /* ── Sub-view tabs (Total / Regionais) ── */
 .subview-toggle {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 6px;
+  box-shadow: var(--shadow-sm);
 }
 
 .subview-btn {
-  padding: 13px 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 30px;
   font-size: 1rem;
   font-weight: 700;
   font-family: inherit;
@@ -572,24 +579,19 @@ body.sidebar-collapsed .sidebar-toggle-btn { color: var(--accent); border-color:
   border: none;
   background: transparent;
   color: var(--text-dim);
-  position: relative;
-  transition: color .18s var(--ease);
+  border-radius: 11px;
+  transition: all .18s var(--ease);
   letter-spacing: .01em;
 }
 
-.subview-btn::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; bottom: -1px;
-  height: 3px;
-  background: transparent;
-  border-radius: 3px;
-  transition: background .18s var(--ease);
-}
+.subview-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
 
-.subview-btn:hover:not(.active) { color: var(--text); }
-.subview-btn.active { color: var(--accent); }
-.subview-btn.active::after { background: var(--accent-grad); }
+.subview-btn:hover:not(.active) { color: var(--accent); background: var(--accent-soft); }
+.subview-btn.active {
+  background: var(--accent-grad);
+  color: #fff;
+  box-shadow: 0 5px 16px rgba(45,59,224,.35);
+}
 
 .subview-panel { display: none; }
 .subview-panel.active { display: block; animation: fade-up .3s var(--ease); }
@@ -1084,8 +1086,8 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 
   <div class="view active" id="view-atual" role="tabpanel" aria-labelledby="btn-atual">
     <div class="subview-toggle" id="atual-subview-toggle" role="tablist" aria-label="Total ou Regionais">
-      <button class="subview-btn active" id="subbtn-atual-total" onclick="setSubView('total')" role="tab" aria-selected="true">Total</button>
-      <button class="subview-btn" id="subbtn-atual-regionais" onclick="setSubView('regionais')" role="tab" aria-selected="false">Regionais</button>
+      <button class="subview-btn active" id="subbtn-atual-total" onclick="setSubView('total')" role="tab" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.9 5.7 3.9 9S14.5 18.4 12 21c-2.5-2.6-3.9-5.7-3.9-9S9.5 5.6 12 3z"/></svg>Brasil Total</button>
+      <button class="subview-btn" id="subbtn-atual-regionais" onclick="setSubView('regionais')" role="tab" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-5.4-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.6 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.4"/></svg>Regionais</button>
     </div>
     <div class="subview-panel active" id="subview-atual-total">
     <div class="legenda">
