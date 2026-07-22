@@ -1,0 +1,16 @@
+{
+  "name": "whatsapp-secretary",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Envia resumos e alertas do repositorio perdadereceita para o WhatsApp",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.9",
+    "dotenv": "^16.4.5",
+    "node-cron": "^3.0.3",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
