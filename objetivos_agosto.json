@@ -1,0 +1,68 @@
+{
+  "SP SUL": {
+    "rest": 65,
+    "projVenda": 33746006,
+    "objMes": 249720,
+    "objDia": 8055
+  },
+  "BK É FOGO CENTRO LITORAL": {
+    "rest": 34,
+    "projVenda": 16814113,
+    "objMes": 124424,
+    "objDia": 4014
+  },
+  "BK É FOGO LESTE": {
+    "rest": 68,
+    "projVenda": 42003914,
+    "objMes": 310829,
+    "objDia": 10027
+  },
+  "BK É FOGO NORTE": {
+    "rest": 32,
+    "projVenda": 22231104,
+    "objMes": 164510,
+    "objDia": 5307
+  },
+  "SP INTERIOR SUL": {
+    "rest": 57,
+    "projVenda": 31997588,
+    "objMes": 236782,
+    "objDia": 7638
+  },
+  "SUL": {
+    "rest": 71,
+    "projVenda": 38555003,
+    "objMes": 285307,
+    "objDia": 9203
+  },
+  "SP INTERIOR NORTE": {
+    "rest": 69,
+    "projVenda": 35157471,
+    "objMes": 260165,
+    "objDia": 8392
+  },
+  "CENTRO OESTE": {
+    "rest": 65,
+    "projVenda": 39513899,
+    "objMes": 292403,
+    "objDia": 9432
+  },
+  "RJ": {
+    "rest": 93,
+    "projVenda": 43562982,
+    "objMes": 322366,
+    "objDia": 10399
+  },
+  "MINAS BAHIA": {
+    "rest": 54,
+    "projVenda": 37445950,
+    "objMes": 277100,
+    "objDia": 8939
+  },
+  "NE": {
+    "rest": 85,
+    "projVenda": 56688310,
+    "objMes": 419493,
+    "objDia": 13532
+  }
+}

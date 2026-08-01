@@ -43,6 +43,8 @@ TAGS = {
     "Muito Acima": ((243, 232, 255), (107, 33, 168)),
     "Subiu": ((254, 226, 226), (153, 27, 27)),
     "Desceu": ((220, 252, 231), (22, 101, 52)),
+    # usados no inicio do mes, onde "subiu/desceu" nao descreve o que se compara
+    "Dentro": ((220, 252, 231), (22, 101, 52)),
 }
 
 FONTS = {
@@ -168,6 +170,49 @@ def coletar(dia=None):
         "topLojas": sorted(lojas.items(), key=lambda x: -x[1])[:10],
         "topCats": sorted(cats.items(), key=lambda x: -x[1])[:10],
         "maiores": com_perda[:3], "menores": list(reversed(com_perda))[:3],
+        # fechamento: so faz sentido quando o mes esta completo
+        "fechado": dia >= m["diasNoMes"],
+        "fech": fechamento(d, m, regs, linhas, acum),
+    }
+
+
+def fechamento(d, m, regs, linhas, acum):
+    """Numeros que so interessam quando o mes fecha.
+
+    Comparacao com o mes anterior e com o mesmo mes de 2025, desempenho contra
+    o objetivo do mes, e o ranking de regionais por percentual.
+    """
+    i = m["mes"] - 1
+    serie26 = d.get("brasil2026") or []
+    serie25 = d.get("brasil2025") or []
+
+    ant = None
+    for j in range(i - 1, -1, -1):
+        if j < len(serie26) and serie26[j]:
+            ant = (j, serie26[j])
+            break
+    mesmo25 = serie25[i] if i < len(serie25) and serie25[i] else None
+
+    obj_mes = sum(l["objMes"] for l in linhas)
+    dias = [round(sum(m["data"][r][k] or 0.0 for r in regs), 2)
+            for k in range(m["ultimoDia"])]
+    pior = max(range(len(dias)), key=lambda k: dias[k]) if dias else None
+    melhor = min(range(len(dias)), key=lambda k: dias[k]) if dias else None
+    acima = [l for l in linhas if l["acum"] > l["objMes"]]
+
+    return {
+        "objMes": obj_mes,
+        "vsObj": acum - obj_mes,
+        "antIdx": ant[0] if ant else None,
+        "antVal": ant[1] if ant else None,
+        "vsAnt": (acum - ant[1]) if ant else None,
+        "val25": mesmo25,
+        "vs25": (acum - mesmo25) if mesmo25 else None,
+        "piorDia": (pior + 1, dias[pior]) if pior is not None else None,
+        "melhorDia": (melhor + 1, dias[melhor]) if melhor is not None else None,
+        "nAcima": len(acima),
+        "nReg": len(linhas),
+        "ranking": sorted(linhas, key=lambda l: -l["pct"]),
     }
 
 
@@ -363,7 +408,70 @@ def img_resumo(caminho, d):
     return caminho
 
 
+def linhas_fechamento(d):
+    """Texto do fechamento mensal, usado no lugar do comentario diario.
+
+    No ultimo dia do mes o numero que interessa nao e o do dia: e o mes contra
+    o objetivo, contra o mes anterior e contra o mesmo mes do ano passado.
+    """
+    z = d["fech"]
+    mn, ano = MES[d["mes"] - 1], d["ano"]
+    dentro = z["vsObj"] <= 0
+
+    def delta(v, base):
+        if not base:
+            return ""
+        s = "+" if v > 0 else "−"
+        return f"  ({s}{abs(v) / base * 100:.1f}%)".replace(".", ",")
+
+    L = [
+        (f("b", 17), ("Objetivo do mês cumprido." if dentro
+                      else "Objetivo do mês estourado."),
+         (22, 101, 52) if dentro else RED),
+        None,
+        (f("r", 14), f"Perda de {brl(d['acum'])} contra", INK),
+        (f("r", 14), f"objetivo de {brl(z['objMes'])}"
+                     + (f", {brl(abs(z['vsObj']))} " + ("abaixo." if dentro else "acima."))
+         , INK),
+        (f("r", 14), f"Percentual do mês: {pct2(d['pctTotal'])}", INK),
+        None,
+        (f("sb", 13), "Comparações", DIM),
+    ]
+    if z["antVal"]:
+        L.append((f("r", 14),
+                  f"{MES[z['antIdx']]}/{ano}: {brl(z['antVal'])}"
+                  + delta(z["vsAnt"], z["antVal"]), INK))
+    if z["val25"]:
+        L.append((f("r", 14),
+                  f"{mn}/{ano - 1}: {brl(z['val25'])}" + delta(z["vs25"], z["val25"]), INK))
+    L += [
+        None,
+        (f("sb", 13), "Regionais", DIM),
+        (f("r", 14), f"{z['nAcima']} de {z['nReg']} acima do objetivo do mês", INK),
+    ]
+    for l in z["ranking"][:3]:
+        L.append((f("r", 14), f"{l['reg']} — {pct1(l['pct'])}  {brl(l['acum'])}", INK))
+    L.append((f("r", 14), "…", DIM))
+    melhor = z["ranking"][-1]
+    L.append((f("r", 14), f"{melhor['reg']} — {pct1(melhor['pct'])}  {brl(melhor['acum'])}", INK))
+
+    L.append(None)
+    if z["piorDia"]:
+        L.append((f("r", 14),
+                  f"Pior dia: {z['piorDia'][0]:02d}/{mn} — {brl(z['piorDia'][1])}", INK))
+    if z["melhorDia"]:
+        L.append((f("r", 14),
+                  f"Melhor dia: {z['melhorDia'][0]:02d}/{mn} — {brl(z['melhorDia'][1])}", INK))
+    L.append(None)
+    L.append((f("b", 15), f"Total {mn}: {brl(d['acum'])}", INK))
+    return L
+
+
 def img_comentario(caminho, d):
+    if d.get("fechado"):
+        return _desenha_comentario(caminho, d, linhas_fechamento(d),
+                                   "Fechamento do Mês",
+                                   f"{MES[d['mes'] - 1]}/{d['ano']}")
     bateu = d["perdaDia"] <= d["metaDia"]
     linhas = [
         (f("b", 17), f"{d['dia']:02d}/{MES[d['mes']-1]}/{d['ano']}", INK),
@@ -384,8 +492,19 @@ def img_comentario(caminho, d):
         linhas.append((f("r", 14), f"{l['reg']} — {brl(l['dia'])}", INK))
     linhas.append(None)
     linhas.append((f("b", 15), f"Acumulado {MES[d['mes']-1]}: {brl(d['acum'])}", INK))
-    linhas.append((f("r", 14), f"Projeção fechamento: {brl(d['proj'])}", INK))
+    if d["dia"] >= 4:
+        linhas.append((f("r", 14), f"Projeção fechamento: {brl(d['proj'])}", INK))
+    else:
+        # Com 1 a 3 dias a projecao e o acumulado multiplicado pelos dias que
+        # faltam, o que transforma qualquer oscilacao do inicio do mes num
+        # numero de milhoes. Melhor nao publicar do que publicar ruido.
+        linhas.append((f("r", 14), "Projeção de fechamento: base ainda curta.", DIM))
 
+    return _desenha_comentario(caminho, d, linhas, "Comentário do Dia",
+                               f"{d['dia']:02d}/{MES[d['mes']-1]}")
+
+
+def _desenha_comentario(caminho, d, linhas, titulo, legenda):
     _, medir = novo(10, 10)
     w = int(max(tw(medir, t, fnt) for fnt, t, _c in [x for x in linhas if x])) + 64 * S
     w = max(w, 560 * S)
@@ -395,8 +514,7 @@ def img_comentario(caminho, d):
     h += 28 * S
 
     img, dr = novo(w, h)
-    y = cabecalho(dr, 16 * S, 16 * S, w - 32 * S, "Comentário do Dia",
-                  f"{d['dia']:02d}/{MES[d['mes']-1]}")
+    y = cabecalho(dr, 16 * S, 16 * S, w - 32 * S, titulo, legenda)
     y += 22 * S
     for x in linhas:
         if x is None:
@@ -499,20 +617,20 @@ def img_consolidado(caminho, d):
     return caminho
 
 
-def dia_anterior_publicado(dia_atual):
-    """Dia de fechamento da rodada publicada anterior.
+def ctx_anterior(dia_atual, mes_atual):
+    """Dia, mes e ano da rodada publicada anterior.
 
     O bloco `anterior` do dados.json guarda os percentuais de comparacao mas nao
-    guarda de que dia eles sao, e supor `dia_atual - 1` erra sempre que uma
+    guarda de quando eles sao, e supor `dia_atual - 1` erra sempre que uma
     rodada e pulada. Em 31/07/2026 a comparacao era contra o dia 28, nao o 29,
     porque no dia 30 nao houve publicacao.
 
-    Percorre o historico do arquivo e devolve o primeiro ultimoDia diferente do
-    atual. Cai para `dia_atual - 1` se o git nao responder.
+    Devolve None se o git nao responder, e nesse caso o chamador assume o
+    comportamento antigo.
     """
     try:
         saida = subprocess.run(
-            ["git", "log", "--format=%H", "-20", "--", "data/dados.json"],
+            ["git", "log", "--format=%H", "-30", "--", "data/dados.json"],
             cwd=ROOT, capture_output=True, timeout=15,
         ).stdout.decode().split()
         for commit in saida:
@@ -520,12 +638,12 @@ def dia_anterior_publicado(dia_atual):
                 ["git", "show", f"{commit}:data/dados.json"],
                 cwd=ROOT, capture_output=True, timeout=15,
             ).stdout.decode("utf-8-sig")
-            anterior = json.loads(blob)["mesAtual"]["ultimoDia"]
-            if anterior != dia_atual:
-                return anterior
+            m = json.loads(blob)["mesAtual"]
+            if (m["ultimoDia"], m["mes"]) != (dia_atual, mes_atual):
+                return {"dia": m["ultimoDia"], "mes": m["mes"], "ano": m["ano"]}
     except Exception:
         pass
-    return dia_atual - 1
+    return None
 
 
 def main():
@@ -540,14 +658,35 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     mn = MES[d["mes"] - 1]
 
+    ant = ctx_anterior(d["dia"], d["mes"])
+    virada = ant is not None and ant["mes"] != d["mes"]
+
+    if virada:
+        # Comparar o percentual de poucos dias contra um mes fechado nao diz
+        # nada: no dia 01 o pctMes de cada regional fica perto de 0,03% e todas
+        # apareceriam "descendo" de ~2%. No lugar disso, cada regional contra o
+        # proprio objetivo diario, que e a leitura que faz sentido cedo no mes.
+        img3 = tabela(
+            out / "3-mudancas.png", f"Início de {mn}/{d['ano']}",
+            f"{d['dia']:02d}/{mn} · dia vs objetivo",
+            [("Regional", "l", "txt"), ("Perda", "r", "txt"),
+             ("Obj./dia", "r", "txt"), ("Situação", "l", "tag")],
+            [[l["reg"], brl(l["dia"]), brl(l["objDia"]),
+              "Dentro" if l["dia"] <= l["objDia"] else "Acima"]
+             for l in sorted(d["linhas"], key=lambda x: -(x["dia"] / (x["objDia"] or 1)))])
+    else:
+        rot = (f"{ant['dia']:02d}/{MES[ant['mes'] - 1]} → {d['dia']:02d}/{mn}"
+               if ant else f"{d['dia'] - 1:02d}/{mn} → {d['dia']:02d}/{mn}")
+        img3 = tabela(
+            out / "3-mudancas.png", "Mudanças Importantes", rot,
+            [("Indicador", "l", "txt"), ("Antes", "r", "txt"),
+             ("Agora", "r", "txt"), ("Alerta", "l", "tag")],
+            [list(m) for m in d["mud"]] or [["nada mudou", "—", "—", "Desceu"]])
+
     feitos = [
         img_resumo(out / "1-resumo-mtd.png", d),
         img_comentario(out / "2-comentario.png", d),
-        tabela(out / "3-mudancas.png", "Mudanças Importantes",
-               f"{dia_anterior_publicado(d['dia'])}/{mn} → {d['dia']}/{mn}",
-               [("Indicador", "l", "txt"), ("Antes", "r", "txt"),
-                ("Agora", "r", "txt"), ("Alerta", "l", "tag")],
-               [list(m) for m in d["mud"]] or [["nada mudou", "—", "—", "Desceu"]]),
+        img3,
         img_consolidado(out / "4-consolidado.png", d),
     ]
 
