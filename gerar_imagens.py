@@ -659,7 +659,9 @@ def main():
     mn = MES[d["mes"] - 1]
 
     ant = ctx_anterior(d["dia"], d["mes"])
-    virada = ant is not None and ant["mes"] != d["mes"]
+    # Mes recem-aberto (publicado so com metas) conta como inicio de mes tanto
+    # quanto uma virada: nos dois casos o `anterior` nao tem com o que comparar.
+    virada = ant is not None and (ant["mes"] != d["mes"] or ant["dia"] == 0)
 
     if virada:
         # Comparar o percentual de poucos dias contra um mes fechado nao diz
