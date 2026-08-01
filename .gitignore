@@ -1,0 +1,13 @@
+# Exports do Power BI — entrada de cada rodada, nao fonte
+*.xlsx
+*.tmp
+
+# Saidas geradas
+imagens/
+relatorio.html
+
+# Percentuais da rodada do dia, montados a cada atualizacao
+pct.json
+
+__pycache__/
+*.pyc
