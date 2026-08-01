@@ -1435,26 +1435,37 @@ function initMensal() {
 function atualizarCabecalhos() {
   var diasComDados = mesDias.filter(function(d, i){ return brasilMesVals[i] !== null; });
   var ultimoDia = diasComDados.length ? diasComDados[diasComDados.length - 1] : 0;
+  // Mês publicado só com as metas, antes do primeiro lançamento: sem esse
+  // caminho a tela mostra "(1–0)", "0/Ago" e status verde com 0%, que lê como
+  // desempenho perfeito em vez de ausência de dado.
+  var semDados = ultimoDia === 0;
   var atualizadoStr = (mesAtual && mesAtual.atualizadoEm)
     ? (function(){ var p = mesAtual.atualizadoEm.split('-'); return parseInt(p[2],10)+'/'+MES_NOME+'/'+p[0]; })()
     : (ultimoDia + '/'+MES_NOME+'/'+MES_ANO);
-  var periodoStr = MES_NOME+'/'+MES_ANO+' (1–' + ultimoDia + ')';
+  var periodoStr = semDados
+    ? (MES_NOME+'/'+MES_ANO+' · metas publicadas, aguardando o 1º dia')
+    : (MES_NOME+'/'+MES_ANO+' (1–' + ultimoDia + ')');
 
   var sub1 = document.getElementById('subtitle-sidebar');
   var sub2 = document.getElementById('subtitle-topbar');
-  if (sub1) sub1.textContent = periodoStr + ' · Atualizado em ' + atualizadoStr;
-  if (sub2) sub2.textContent = 'Zamp · ' + periodoStr + ' · Atualizado em ' + atualizadoStr;
+  var suf = semDados ? '' : (' · Atualizado em ' + atualizadoStr);
+  if (sub1) sub1.textContent = periodoStr + suf;
+  if (sub2) sub2.textContent = 'Zamp · ' + periodoStr + suf;
 
   var totalSub = document.getElementById('atual-total-sub');
-  if (totalSub) totalSub.textContent = 'Acumulado MTD Brasil (1–' + ultimoDia + '/'+MES_NOME+')';
+  if (totalSub) totalSub.textContent = semDados
+    ? 'Nenhum dia lançado ainda'
+    : ('Acumulado MTD Brasil (1–' + ultimoDia + '/'+MES_NOME+')');
 
   var metaVal = document.getElementById('atual-meta-val');
   if (metaVal) metaVal.textContent = fmtR(metaDiaMes);
 
   var tituloEl = document.getElementById('atual-resumo-titulo');
-  if (tituloEl) tituloEl.textContent = 'Resumo MTD por Regional — '+MES_NOME+'/'+MES_ANO+' (1–' + ultimoDia + '/'+MES_NOME+')';
+  if (tituloEl) tituloEl.textContent = semDados
+    ? ('Metas por Regional — '+MES_NOME+'/'+MES_ANO)
+    : ('Resumo MTD por Regional — '+MES_NOME+'/'+MES_ANO+' (1–' + ultimoDia + '/'+MES_NOME+')');
   var thDia = document.getElementById('th-atual-dia');
-  if (thDia) thDia.textContent = ultimoDia + '/'+MES_NOME;
+  if (thDia) thDia.textContent = semDados ? '—' : (ultimoDia + '/'+MES_NOME);
   var thAntes = document.getElementById('th-atual-antes');
   if (thAntes) thAntes.textContent = ultimoDia > 1 ? ('1–' + (ultimoDia - 1) + '/'+MES_NOME) : '—';
 
@@ -1466,21 +1477,23 @@ function atualizarCabecalhos() {
     var ex = mesExtra[reg];
     var lbl = (typeof LABEL_REG !== 'undefined' && LABEL_REG[reg]) ? LABEL_REG[reg] : reg;
     var ratio = ex.objDia > 0 ? ex.diaUlt / ex.objDia : 0;
-    var diaBg = ratio < 1.0 ? 'background:#d1fae5;color:#065f46;font-weight:700' : ratio <= 1.2 ? 'background:#fee2e2;color:#991b1b;font-weight:700' : 'background:#ede9fe;color:#6d28d9;font-weight:700';
+    var diaBg = semDados ? '' : (ratio < 1.0 ? 'background:#d1fae5;color:#065f46;font-weight:700' : ratio <= 1.2 ? 'background:#fee2e2;color:#991b1b;font-weight:700' : 'background:#ede9fe;color:#6d28d9;font-weight:700');
+    var tr = function(v){ return semDados ? '<span class="muted">—</span>' : v; };
     html += '<tr><td><strong>' + lbl + '</strong></td><td class="num">' + fmtN(ex.rest) + '</td><td class="num">' + fmtR(ex.projVenda) + '</td>'
       + '<td class="num">' + fmtR(ex.objMes) + '</td><td class="num">' + fmtR(ex.objDia) + '</td>'
-      + '<td class="num" style="' + diaBg + '">' + fmtR(ex.diaUlt) + '</td><td class="num">' + fmtR(ex.acumAntes) + '</td>'
-      + '<td class="num"><strong>' + fmtR(ex.acum) + '</strong></td><td class="num">' + fmtR(ex.perdaLoja) + '</td>'
-      + '<td class="num">' + fmt(ex.pctMes, 1) + '%</td><td>' + badge(ex.pctMes) + '</td></tr>';
+      + '<td class="num" style="' + diaBg + '">' + tr(fmtR(ex.diaUlt)) + '</td><td class="num">' + tr(fmtR(ex.acumAntes)) + '</td>'
+      + '<td class="num"><strong>' + tr(fmtR(ex.acum)) + '</strong></td><td class="num">' + tr(fmtR(ex.perdaLoja)) + '</td>'
+      + '<td class="num">' + tr(fmt(ex.pctMes, 1) + '%') + '</td><td>' + tr(badge(ex.pctMes)) + '</td></tr>';
     totRest += ex.rest; totProj += ex.projVenda; totObjMes += ex.objMes; totObjDia += ex.objDia;
     totDia += ex.diaUlt; totAntes += ex.acumAntes; totAcum += ex.acum;
   });
   var pctTotalBrasil = (typeof pctTotalMes !== 'undefined') ? pctTotalMes : 0;
+  var trT = function(v){ return semDados ? '<span class="muted">—</span>' : v; };
   html += '<tr class="total-row"><td>BRASIL TOTAL</td><td class="num">' + fmtN(totRest) + '</td><td class="num">' + fmtR(totProj) + '</td>'
     + '<td class="num">' + fmtR(totObjMes) + '</td><td class="num">' + fmtR(totObjDia) + '</td>'
-    + '<td class="num" style="background:#ede9fe;color:#6d28d9;font-weight:700">' + fmtR(totDia) + '</td><td class="num">' + fmtR(totAntes) + '</td>'
-    + '<td class="num"><strong>' + fmtR(totAcum) + '</strong></td><td class="num">—</td>'
-    + '<td class="num"><strong>' + fmt(pctTotalBrasil, 2) + '%</strong></td><td>' + badge(pctTotalBrasil) + '</td></tr>';
+    + '<td class="num"' + (semDados ? '' : ' style="background:#ede9fe;color:#6d28d9;font-weight:700"') + '>' + trT(fmtR(totDia)) + '</td><td class="num">' + trT(fmtR(totAntes)) + '</td>'
+    + '<td class="num"><strong>' + trT(fmtR(totAcum)) + '</strong></td><td class="num">—</td>'
+    + '<td class="num"><strong>' + trT(fmt(pctTotalBrasil, 2) + '%') + '</strong></td><td>' + trT(badge(pctTotalBrasil)) + '</td></tr>';
   tbody.innerHTML = html;
 }
 
