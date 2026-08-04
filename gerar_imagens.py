@@ -492,13 +492,14 @@ def img_comentario(caminho, d):
         linhas.append((f("r", 14), f"{l['reg']} — {brl(l['dia'])}", INK))
     linhas.append(None)
     linhas.append((f("b", 15), f"Acumulado {MES[d['mes']-1]}: {brl(d['acum'])}", INK))
-    if d["dia"] >= 4:
-        linhas.append((f("r", 14), f"Projeção fechamento: {brl(d['proj'])}", INK))
-    else:
-        # Com 1 a 3 dias a projecao e o acumulado multiplicado pelos dias que
-        # faltam, o que transforma qualquer oscilacao do inicio do mes num
-        # numero de milhoes. Melhor nao publicar do que publicar ruido.
-        linhas.append((f("r", 14), "Projeção de fechamento: base ainda curta.", DIM))
+    linhas.append((f("r", 14), f"Projeção fechamento: {brl(d['proj'])}", INK))
+    if d["dia"] <= 5:
+        # Nos primeiros dias a projecao e a media diaria multiplicada pelos dias
+        # que faltam, entao um unico dia atipico move o numero em centenas de
+        # milhares. Dizer sobre quantos dias ela se apoia evita que seja lida
+        # como previsao firme.
+        linhas.append((f("r", 12), f"(média de {d['dia']} "
+                       + ("dia" if d["dia"] == 1 else "dias") + " × 31)", DIM))
 
     return _desenha_comentario(caminho, d, linhas, "Comentário do Dia",
                                f"{d['dia']:02d}/{MES[d['mes']-1]}")
