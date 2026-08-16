@@ -11,3 +11,5 @@ pct.json
 
 __pycache__/
 *.pyc
+browser-profile/
+storage-state.json
