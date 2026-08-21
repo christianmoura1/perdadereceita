@@ -182,7 +182,9 @@ def snapshot_anterior(mes_atual, reg_names):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--excel", required=True)
-    ap.add_argument("--pct", required=True, help="JSON com os % oficiais da tela do BI")
+    ap.add_argument("--pct", required=False, help="JSON com os % oficiais da tela do BI")
+    ap.add_argument("--so-detalhe", action="store_true",
+                    help="Atualiza APENAS data/detalhe-mes.json (dados.json segue vindo do BI via pbi_to_dados)")
     ap.add_argument("--objetivos", help="JSON com rest/projVenda/objMes/objDia por regional (virada de mês)")
     ap.add_argument("--manter-objetivos", action="store_true",
                     help="Na virada de mês, repetir os objetivos do mês anterior")
@@ -194,9 +196,37 @@ def main():
     dados_path = data_dir / "dados.json"
     detalhe_path = data_dir / "detalhe-mes.json"
 
-    with open(dados_path) as f:
+    if args.so_detalhe:
+        # Atualiza somente o detalhe-mes.json a partir do Excel exportado do BI.
+        # dados.json NAO e tocado: ele vem da extracao oficial (pbi_to_dados).
+        linhas = ler_excel(args.excel)
+        if not linhas:
+            sys.exit("Excel sem linhas validas")
+        datas_presentes = sorted(set(l["data"] for l in linhas))
+        ano, mes = datas_presentes[-1].year, datas_presentes[-1].month
+        for d in datas_presentes:
+            if (d.year, d.month) != (ano, mes):
+                sys.exit(f"Excel contem datas de mais de um mes: {d} vs {ano}-{mes:02d}")
+        det_agg = build_det_agg(linhas)
+        total_geral = round(sum(v["totalPerda"] for v in det_agg.values()), 2)
+        oc_geral = sum(v["oc"] for v in det_agg.values())
+        print(f"Detalhe: {MES_NOMES[mes-1]}/{ano} - ate dia {datas_presentes[-1].day} - "
+              f"{oc_geral} ocorrencias - R$ {total_geral:,.2f}")
+        if args.dry_run:
+            print("--dry-run: nada foi gravado.")
+            return
+        data_dir.mkdir(parents=True, exist_ok=True)
+        with open(detalhe_path, "w", encoding="utf-8") as f:
+            json.dump(det_agg, f, ensure_ascii=False, separators=(",", ":"))
+        print(f"Gravado: {detalhe_path}")
+        return
+
+    if not args.pct:
+        sys.exit("--pct e obrigatorio (exceto com --so-detalhe)")
+
+    with open(dados_path, encoding="utf-8") as f:
         dados = json.load(f)
-    with open(args.pct) as f:
+    with open(args.pct, encoding="utf-8") as f:
         pct_raw = json.load(f)
 
     pct = {normaliza_regional(k): v for k, v in pct_raw.items() if k != "BRASIL"}
@@ -229,7 +259,7 @@ def main():
             sys.exit(f"Excel traz mês anterior ao corrente ({ano}-{mes:02d}); nada a fazer")
         # objetivos do novo mês
         if args.objetivos:
-            with open(args.objetivos) as f:
+            with open(args.objetivos, encoding="utf-8") as f:
                 obj_raw = json.load(f)
             objetivos = {normaliza_regional(k): v for k, v in obj_raw.items()}
             for r in reg_names:

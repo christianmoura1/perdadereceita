@@ -1,0 +1,176 @@
+// run_daily.js — Pipeline diario de Perda de Receita (VPS nova).
+//
+// Fluxo:
+//   1. node scripts\pbi_extract.js        (extrai do Power BI via CDP)
+//   2. python scripts\pbi_to_dados.py     (resumo-*.json -> data\dados.json)
+//   3. python verifica.py --sem-detalhe   (guarda de publicacao)
+//   4. python gerar_relatorio.py + gerar_imagens.py
+//   5. git add/commit/push (apenas se for repo git com push funcionando)
+//   6. WhatsApp (uazapi): 4 PNGs (/send/media) + comentario em TEXTO (/send/text)
+// Se qualquer etapa 1-3 falhar: NAO publica; envia WhatsApp de alerta.
+//
+// Agendado como "PerdaReceita - Diario 0900" (SYSTEM, 09:00).
+// Uso manual: node scripts\run_daily.js
+
+const fs = require('fs');
+const path = require('path');
+const { spawnSync, execSync } = require('child_process');
+
+const ROOT = 'C:\\projetos\\perdadereceita';
+const NODE = 'C:\\Program Files\\nodejs\\node.exe';
+const PYTHON = 'C:\\Program Files\\Python311\\python.exe';
+const DESTINO = '5541992572743';
+
+function agora() { return new Date().toISOString(); }
+function logInfo(msg, extra) { console.log(JSON.stringify({ ts: agora(), level: 'info', msg, ...extra })); }
+function logErro(msg, extra) { console.error(JSON.stringify({ ts: agora(), level: 'error', msg, ...extra })); }
+
+// env vars Machine nem sempre chegam ao processo (SYSTEM/SSH) — le do registro.
+function envMachine(nome) {
+  if (process.env[nome]) return process.env[nome];
+  try {
+    const out = execSync(
+      `reg query "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment" /v ${nome}`,
+      { encoding: 'utf8' }
+    );
+    const m = out.split(/\r?\n/).find((l) => l.trim().startsWith(nome));
+    if (m) return m.split(/\s{2,}/).pop().trim();
+  } catch {}
+  return null;
+}
+
+function rodar(rotulo, cmd, args, cwd = ROOT) {
+  logInfo('etapa iniciada', { etapa: rotulo, cmd: path.basename(cmd), args });
+  const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', timeout: 15 * 60 * 1000 });
+  const saida = ((r.stdout || '') + (r.stderr || '')).trim();
+  logInfo('etapa concluida', { etapa: rotulo, exit: r.status, saida: saida.slice(0, 1500) });
+  if (r.status !== 0) {
+    throw new Error(`${rotulo} falhou (exit ${r.status}): ${saida.slice(-400)}`);
+  }
+  return saida;
+}
+
+function parseDinheiro(txt) {
+  return parseFloat(String(txt).replace(/R\$/g, '').replace(/\s/g, '').replace(/,/g, ''));
+}
+
+function fmtBRL(v) {
+  return 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+}
+
+async function uazapi(endpoint, corpo) {
+  const url = envMachine('UAZAPI_URL');
+  const token = envMachine('UAZAPI_TOKEN');
+  if (!url || !token) throw new Error('UAZAPI_URL/UAZAPI_TOKEN ausentes');
+  const resp = await fetch(`${url.replace(/\/$/, '')}/${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', token },
+    body: JSON.stringify(corpo),
+  });
+  const txt = await resp.text();
+  if (!resp.ok) throw new Error(`uazapi ${endpoint} -> HTTP ${resp.status}: ${txt.slice(0, 200)}`);
+  return txt;
+}
+
+async function enviarAlerta(motivo) {
+  try {
+    await uazapi('send/text', {
+      number: DESTINO,
+      text: `*Analista de Planejamento* ⚠️ Perda de Receita: pipeline diario FALHOU (${agora().slice(0, 16)})\nMotivo: ${motivo.slice(0, 500)}\nNada foi publicado.`,
+    });
+    logInfo('alerta de falha enviado');
+  } catch (e) {
+    logErro('nao consegui nem enviar o alerta', { erro: e.message });
+  }
+}
+
+(async () => {
+  logInfo('pipeline diario iniciado');
+
+  // 1. extracao do Power BI
+  rodar('pbi_extract', NODE, ['scripts\\pbi_extract.js']);
+
+  // localiza o resumo mais recente
+  const resumos = fs.readdirSync(path.join(ROOT, 'pbi_raw'))
+    .filter((f) => /^resumo-\d{8}\.json$/.test(f)).sort();
+  if (!resumos.length) throw new Error('nenhum resumo-*.json gerado');
+  const resumo = JSON.parse(fs.readFileSync(path.join(ROOT, 'pbi_raw', resumos[resumos.length - 1]), 'utf8'));
+  const dia = Math.max(...resumo.perdaPorData.map((r) => parseInt(r.data.split('/')[1], 10)));
+  const pctBrasil = parseFloat(String(resumo.total.pctTotal).replace('%', ''));
+  const totalBrasil = parseDinheiro(resumo.total.perdaTotal);
+  logInfo('referencia do BI', { dia, pctBrasil, totalBrasil });
+
+  // 2. conversao para dados.json
+  rodar('pbi_to_dados', PYTHON, ['scripts\\pbi_to_dados.py']);
+
+  // 3. guarda de publicacao (valores do BI passados por fora, nunca do proprio JSON)
+  //    tol=20: o BI exibe valores arredondados; a soma das regionais pode
+  //    diferir do total exibido em alguns reais.
+  rodar('verifica', PYTHON,
+    ['verifica.py', '--dia', String(dia), '--pct', String(pctBrasil),
+     '--total', totalBrasil.toFixed(2), '--tol', '20', '--sem-detalhe']);
+
+  // 3.5 detalhe por WO (aba 13 -> export xlsx -> detalhe-mes.json)
+  //     Alimenta ocorrencias, hora pico e top 10 do consolidado.
+  //     NAO fatal: se a exportacao falhar, o relatorio sai com o detalhe
+  //     anterior e o deslize fica registrado no log.
+  try {
+    const saidaExp = rodar('pbi_export_detalhe', NODE, ['scripts\\pbi_export_detalhe.js']);
+    const mArq = saidaExp.match(/ARQUIVO=([^\r\n]+)/);
+    if (!mArq) throw new Error('export nao retornou ARQUIVO=');
+    rodar('detalhe_mes', PYTHON, ['scripts\\gerar_dados.py', '--excel', mArq[1].trim(), '--so-detalhe']);
+  } catch (e) {
+    logErro('atualizacao do detalhe falhou (seguindo com detalhe anterior)', { erro: e.message.slice(0, 300) });
+  }
+
+  // 4. relatorio + imagens
+  rodar('gerar_relatorio', PYTHON, ['gerar_relatorio.py']);
+  rodar('gerar_imagens', PYTHON, ['gerar_imagens.py']);
+
+  // 5. git (so se for repo; na falta de credencial, registra e segue)
+  if (fs.existsSync(path.join(ROOT, '.git'))) {
+    try {
+      // -f: imagens/ e relatorio.html estao no .gitignore mas o dashboard precisa deles
+      rodar('git add', 'C:\\Program Files\\Git\\cmd\\git.exe', ['add', '-f', 'data', 'relatorio.html', 'imagens']);
+      const hoje = new Date().toISOString().slice(0, 10);
+      rodar('git commit', 'C:\\Program Files\\Git\\cmd\\git.exe',
+        ['commit', '-m', `Perda de receita ${hoje} (pipeline automatico PBI)`]);
+      // push com PAT da env Machine GITHUB_TOKEN (SYSTEM nao tem credencial interativa).
+      // Token vai por env de configuracao do git — nunca aparece em args/log.
+      const ghToken = envMachine('GITHUB_TOKEN');
+      if (!ghToken) throw new Error('GITHUB_TOKEN ausente (env Machine)');
+      process.env.GIT_CONFIG_COUNT = '1';
+      process.env.GIT_CONFIG_KEY_0 = 'http.https://github.com/.extraheader';
+      process.env.GIT_CONFIG_VALUE_0 =
+        'AUTHORIZATION: basic ' + Buffer.from(`x-access-token:${ghToken}`).toString('base64');
+      rodar('git push', 'C:\\Program Files\\Git\\cmd\\git.exe', ['push', 'origin', 'HEAD']);
+    } catch (e) {
+      logErro('git falhou (seguindo sem publicar no GitHub)', { erro: e.message.slice(0, 300) });
+    }
+  } else {
+    logInfo('sem .git na VPS nova — etapa git pulada');
+  }
+
+  // 6. WhatsApp: imagens (sem a do comentario — comentario vai so em texto)
+  const dirImg = path.join(ROOT, 'imagens');
+  const pngs = fs.readdirSync(dirImg)
+    .filter((f) => f.endsWith('.png') && !/comentario/i.test(f)).sort();
+  if (pngs.length < 3) throw new Error('poucos PNGs (sem comentario) em imagens: ' + pngs.length);
+  for (const f of pngs.slice(0, 4)) {
+    const b64 = fs.readFileSync(path.join(dirImg, f)).toString('base64');
+    await uazapi('send/media', { number: DESTINO, type: 'image', file: b64, text: '*Analista de Planejamento*' });
+    logInfo('imagem enviada', { arquivo: f });
+  }
+
+  // comentario em TEXTO, no modelo definido pelo usuario (gerado por gerar_relatorio.py)
+  const comentario = '*Analista de Planejamento*\n' + fs.readFileSync(path.join(ROOT, 'comentario.txt'), 'utf8').trim();
+  await uazapi('send/text', { number: DESTINO, text: comentario });
+  logInfo('comentario enviado', { chars: comentario.length });
+
+  logInfo('pipeline diario concluido com sucesso');
+  process.exit(0);
+})().catch(async (e) => {
+  logErro('pipeline falhou', { erro: e.message.slice(0, 400) });
+  await enviarAlerta(e.message);
+  process.exit(1);
+});
