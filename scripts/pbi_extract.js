@@ -629,6 +629,22 @@ async function extrairPctPorRegional(frame, page) {
     fatal('falha ao extrair resumo estruturado', { erro: e.message });
   }
 
+  // GUARDA: sem os % por regional o resumo e' inutil -- o gerar_dados vai cair
+  // no pct.json anterior e publicar percentual de ontem SEM AVISAR. Em 21/08
+  // isso aconteceu de verdade: o extrator disse "sucesso" com pctPorRegional
+  // vazio. Falhar aqui e' melhor que mentir que deu certo.
+  const lidas = Object.keys(resumo.pctPorRegional || {}).length;
+  const MINIMO = Number(process.env.PBI_MIN_REGIONAIS || '8');
+  if (lidas < MINIMO) {
+    fatal('slicer nao devolveu os % por regional', {
+      lidas,
+      minimoEsperado: MINIMO,
+      falhas: resumo.pctPorRegionalFalhas || regPct.falhas,
+      dica: 'conferir se BKB e MANUTENCAO estao selecionados na tela do Power BI',
+    });
+  }
+  logInfo('percentuais conferidos', { regionais: lidas });
+
   const pResumo = path.join(RAW_DIR, `resumo-${stamp}.json`);
   fs.writeFileSync(pResumo, JSON.stringify(resumo, null, 2), 'utf8');
   logInfo('resumo salvo', {
