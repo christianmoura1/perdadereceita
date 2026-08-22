@@ -148,16 +148,17 @@ def main():
 
     bateu = perda_dia <= meta_dia
     comentario = (
-        f"{dia:02d}/{MES_NOMES[mes-1]}/{ano}:\n"
-        + ("✅ Meta diária atingida.\n" if bateu else "❌ Meta diária não atingida.\n")
-        + f"\nA perda de {brl(perda_dia)} "
+        f"*Comentário do Dia — {dia:02d}/{MES_NOMES[mes-1]}/{ano}:*\n\n"
+        + ("\u2705 Meta diária atingida.\n" if bateu else "\u274c Meta diária não atingida.\n")
+        + f"A perda de {brl(perda_dia)} "
         + ("ficou dentro do" if bateu else "superou o")
         + f" objetivo de {brl(meta_dia)}.\n\n"
-        + "Maiores perdas: " + ", ".join(f"{l['reg']} ({brl(l['dia'])})" for l in maiores) + ".\n\n"
+        + "Maiores perdas: " + ", ".join(f"{l['reg']} ({brl(l['dia'])})" for l in maiores) + ".\n"
         + "Menores perdas: " + ", ".join(f"{l['reg']} ({brl(l['dia'])})" for l in menores) + ".\n\n"
         + f"Acumulado {MES_NOMES[mes-1]}: {brl(acum_total)}\n"
-        + f"Projeção fechamento: {brl(projecao)}"
+        + f"Projeção fechamento: {brl(projecao)}."
     )
+    (ROOT / "comentario.txt").write_text(comentario, encoding="utf-8")
 
     trs = "".join(
         f"<tr><td class='reg'>{l['reg']}</td><td>{l['rest']}</td><td>{brl(l['projVenda'],0)}</td>"

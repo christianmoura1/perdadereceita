@@ -302,14 +302,22 @@ async function acharContainerRegional(frame) {
     for (let i = 0; i < bs.length; i++) {
       const sc = bs[i].querySelector('.scroll-content');
       if (!sc) continue;
+      // O slicer e' VIRTUALIZADO: so' ~3 botoes existem no DOM por vez. Em
+      // 21/08 eu acelerei esta varredura para 120px/180ms e ela passou a pular
+      // as posicoes onde CENTRO OESTE e SP SUL renderizam -- o container nunca
+      // era reconhecido e o pipeline do dia 22 nao publicou. Passo pequeno de
+      // novo, mas com saida antecipada: quando confirma, para de rolar.
       const vistos = new Set();
-      for (let pos = 0; pos <= sc.scrollHeight; pos += 120) {
+      const achou = () => [...vistos].some((t) => /CENTRO OESTE/i.test(t))
+        && [...vistos].some((t) => /SP SUL/i.test(t));
+      for (let pos = 0; pos <= sc.scrollHeight; pos += 40) {
         sc.scrollTop = pos;
-        await new Promise((r) => setTimeout(r, 180));
+        await new Promise((r) => setTimeout(r, 250));
         for (const e of bs[i].querySelectorAll('button, [role="button"]')) {
           const t = (e.innerText || '').trim();
           if (t) vistos.add(t);
         }
+        if (achou()) break;
       }
       sc.scrollTop = 0;
       if ([...vistos].some((t) => /CENTRO OESTE/i.test(t)) && [...vistos].some((t) => /SP SUL/i.test(t))) return i;
@@ -328,9 +336,11 @@ async function slicerOperar(frame, idx, op) {
 
     if (op.tipo === 'listar') {
       const itens = new Map(); // nome -> selecionado
-      for (let pos = 0; pos <= sc.scrollHeight; pos += 120) {
+      // Mesma armadilha da virtualizacao: aqui precisamos de TODAS as
+      // regionais, entao nao ha saida antecipada -- so' passo pequeno.
+      for (let pos = 0; pos <= sc.scrollHeight; pos += 40) {
         sc.scrollTop = pos;
-        await new Promise((r) => setTimeout(r, 180));
+        await new Promise((r) => setTimeout(r, 250));
         for (const e of botoes()) {
           const t = (e.innerText || '').trim();
           if (!t || /^(Select all|Deselect all)$/i.test(t)) continue;

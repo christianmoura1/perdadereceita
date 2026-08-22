@@ -14,6 +14,8 @@ p.add_argument("--dia", type=int, required=True, help="ultimo dia com dados")
 p.add_argument("--pct", type=float, required=True, help="% oficial do Brasil (2 casas)")
 p.add_argument("--total", type=float, required=True, help="perda acumulada do Brasil")
 p.add_argument("--tol", type=float, default=1.0, help="tolerancia em R$")
+p.add_argument("--sem-detalhe", action="store_true",
+               help="pula as checagens de detalhe-mes.json (fluxo PBI: detalhe segue via Excel)")
 a = p.parse_args()
 
 d = json.load(open("data/dados.json", encoding="utf-8"))
@@ -40,12 +42,18 @@ dias = len([v for v in m["brasilVals"] if v is not None])
 if dias != a.dia:
     erros.append(f"{dias} dias com dados, esperado {a.dia}")
 
-det = json.load(open("data/detalhe-mes.json", encoding="utf-8"))
-if len(det) != 11:
-    erros.append(f"detalhe tem {len(det)} regionais, esperado 11")
-soma_det = round(sum(v["totalPerda"] for v in det.values()), 2)
-if abs(soma_det - a.total) > a.tol:
-    erros.append(f"detalhe soma {soma_det} != esperado {a.total}")
+if getattr(a, "sem_detalhe", False):
+    print("detalhe-mes.json: checagem pulada (--sem-detalhe; detalhe segue via Excel)")
+    det = None
+    soma_det = "pulada"
+else:
+    det = json.load(open("data/detalhe-mes.json", encoding="utf-8"))
+if det is not None:
+    if len(det) != 11:
+        erros.append(f"detalhe tem {len(det)} regionais, esperado 11")
+    soma_det = round(sum(v["totalPerda"] for v in det.values()), 2)
+    if abs(soma_det - a.total) > a.tol:
+        erros.append(f"detalhe soma {soma_det} != esperado {a.total}")
 
 print(f"ultimoDia={m['ultimoDia']} atualizadoEm={m['atualizadoEm']} pctTotal={m['pctTotal']}")
 print(f"brasilVals={soma_brasil} extra.acum={soma_acum} mensal={mensal} "

@@ -162,6 +162,16 @@ async function umaTentativa(page, cliente, tentativa) {
 
   const cliente = await page.context().newCDPSession(page);
 
+  // O Playwright acompanha todo download por baixo dos panos (Page.downloadWillBegin
+  // chega tambem na sessao CDP dele), mesmo sem chamarmos page.on('download') aqui.
+  // Com Browser.setDownloadBehavior apontando pra CAIXA, o arquivo ja sai direto la
+  // e ninguem chama saveAs() no objeto Download que ele cria por conta propria; ao
+  // desconectar (browser.close()) ele cancela esse download pendente e a rejeicao
+  // ("download.saveAs: canceled") sobe sem handler e derruba o processo. Escutando
+  // e ignorando o evento aqui, o Playwright para de tratar aquele download como
+  // pendente e a desconexao nao rejeita mais nada.
+  page.on('download', (d) => { d.saveAs(path.join(CAIXA, '.ignorar-' + Date.now())).catch(() => {}); });
+
   let ultimoErro = null;
   for (let t = 1; t <= TENTATIVAS; t++) {
     try {
