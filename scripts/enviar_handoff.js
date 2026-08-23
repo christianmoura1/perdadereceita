@@ -7,6 +7,16 @@ const { execFileSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const IMAGENS = ['1-resumo-mtd.png', '3-mudancas.png', '4-consolidado.png'];
 
+function machineEnv(nome) {
+  try {
+    const out = execFileSync('C:\\Windows\\System32\\reg.exe', [
+      'query', 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment', '/v', nome,
+    ], { encoding: 'utf8', windowsHide: true });
+    const linha = out.split(/\r?\n/).find((l) => l.trim().startsWith(nome));
+    return linha ? linha.trim().split(/\s{2,}/).slice(2).join('  ').trim() : '';
+  } catch { return ''; }
+}
+
 function crc32(buf) {
   let c = ~0;
   for (const b of buf) {
@@ -42,7 +52,7 @@ function montarZip(entradas) {
 }
 
 (async () => {
-  const token = process.env.MORDOMO_HANDOFF_TOKEN;
+  const token = process.env.MORDOMO_HANDOFF_TOKEN || machineEnv('MORDOMO_HANDOFF_TOKEN');
   if (!token) throw new Error('MORDOMO_HANDOFF_TOKEN ausente');
   const commit = execFileSync('C:\\Program Files\\Git\\cmd\\git.exe', ['-C', ROOT, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   const date = new Date().toISOString().slice(0, 10);
