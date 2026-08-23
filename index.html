@@ -1174,20 +1174,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 // ============================================================
 // ZONA ESTÁTICA — não editar nesta seção
 // ============================================================
-var authorizedUsers = {
-  'manutencao': '49f5ff1cf27f6debd552e466f5e474174f74838f35656efcf0cd708ce9c32325',
-  'sul':        '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4',
-  'cm':         '6b51d431df5d7f141cbececcf79edf3dd861c3b4069f0b11661a3eefacbba918',
-  'manu':       '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'
-};
-
-async function hashSenha(senha) {
-  var enc = new TextEncoder().encode(senha);
-  var buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-}
-
-function doLogin() {
+async function doLogin() {
   var btn = document.getElementById('btn-login');
   var err = document.getElementById('login-error');
   var u = document.getElementById('inp-user').value.trim();
@@ -1195,27 +1182,36 @@ function doLogin() {
   err.style.display = 'none';
   if (!u || !p) { err.textContent = 'Preencha usuário e senha.'; err.style.display = 'block'; return; }
   btn.classList.add('btn-loading'); btn.textContent = 'Entrando...'; btn.disabled = true;
-  hashSenha(p).then(function(hash) {
-    var userFound = authorizedUsers.hasOwnProperty(u) && authorizedUsers[u] === hash;
-    if (!userFound) {
+  try {
+    var response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ username: u, password: p })
+    });
+    if (!response.ok) {
       btn.classList.remove('btn-loading'); btn.disabled = false; btn.textContent = 'Entrar';
       err.textContent = 'Usuário ou senha incorretos.'; err.style.display = 'block';
       document.getElementById('inp-pass').value = ''; document.getElementById('inp-pass').focus();
       return;
     }
     btn.textContent = 'Carregando dados...';
-    dadosProntos.then(function() {
-      btn.classList.remove('btn-loading'); btn.disabled = false; btn.textContent = 'Entrar';
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('dashboard').style.display = 'block';
-      document.getElementById('dashboard').focus();
-      initDashboard();
-    }).catch(function(e) {
-      btn.classList.remove('btn-loading'); btn.disabled = false; btn.textContent = 'Entrar';
-      err.textContent = 'Falha ao carregar dados. Recarregue a página.'; err.style.display = 'block';
-      console.error('Erro ao carregar dados:', e);
-    });
-  });
+    await carregarDados();
+    abrirDashboard();
+  } catch (e) {
+    btn.classList.remove('btn-loading'); btn.disabled = false; btn.textContent = 'Entrar';
+    err.textContent = 'Falha ao carregar dados. Tente novamente.'; err.style.display = 'block';
+    console.error('Erro ao entrar:', e);
+  }
+}
+
+function abrirDashboard() {
+  var btn = document.getElementById('btn-login');
+  btn.classList.remove('btn-loading'); btn.disabled = false; btn.textContent = 'Entrar';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('dashboard').focus();
+  initDashboard();
 }
 
 document.getElementById('inp-user').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('inp-pass').focus(); });
@@ -1279,7 +1275,14 @@ var mesData, mesExtra, mesDias, brasilMesVals, metaDiaMes, mesNames, mesAnterior
 var MES_NOME, MES_ANO, MES_DIAS, MES_ISO;
 var detAgg = null, dashboardIniciado = false;
 
-var dadosProntos = fetch('data/dados.json').then(function(r){ return r.json(); }).then(function(d) {
+var dadosProntos = null, detAggPronto = null;
+
+function carregarDados() {
+  if (dadosProntos) return dadosProntos;
+  dadosProntos = fetch('/api/data?file=dados', { credentials: 'same-origin' }).then(function(r){
+    if (!r.ok) throw new Error('Dados indisponíveis (' + r.status + ')');
+    return r.json();
+  }).then(function(d) {
   LABEL_REG = d.LABEL_REG;
   regionaisData = d.regionaisData;
   brasil2025 = d.brasil2025; brasil2026 = d.brasil2026;
@@ -1294,10 +1297,13 @@ var dadosProntos = fetch('data/dados.json').then(function(r){ return r.json(); }
   MES_ISO = mesAtual.ano + '-' + (mesAtual.mes < 10 ? '0'+mesAtual.mes : mesAtual.mes);
   mesDias = [];
   for (var i = 1; i <= MES_DIAS; i++) mesDias.push(i);
-});
+  });
 
 // Detalhamento (1MB+) baixa em segundo plano — o painel abre sem esperar por ele
-var detAggPronto = fetch('data/detalhe-mes.json').then(function(r){ return r.json(); }).then(function(d) {
+  detAggPronto = fetch('/api/data?file=detalhe', { credentials: 'same-origin' }).then(function(r){
+    if (!r.ok) throw new Error('Detalhamento indisponível (' + r.status + ')');
+    return r.json();
+  }).then(function(d) {
   detAgg = d;
   if (dashboardIniciado) {
     mesNames.forEach(function(reg) {
@@ -1305,7 +1311,14 @@ var detAggPronto = fetch('data/detalhe-mes.json').then(function(r){ return r.jso
     });
     try { renderTotalDetalhe(); } catch(e) { console.error('renderTotalDetalhe erro:', e); }
   }
-}).catch(function(e) { console.error('Falha ao carregar detalhe-mes.json:', e); detAgg = null; });
+  }).catch(function(e) { console.error('Falha ao carregar detalhe-mes.json:', e); detAgg = null; });
+  return dadosProntos;
+}
+
+fetch('/api/session', { credentials: 'same-origin' }).then(function(r) {
+  if (!r.ok) return;
+  return carregarDados().then(abrirDashboard);
+}).catch(function() {});
 
 
 function initDashboard() {
