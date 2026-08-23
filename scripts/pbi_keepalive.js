@@ -53,11 +53,19 @@ async function avisar(texto) {
 (async () => {
   const estado = lerEstado();
   let browser;
-  try {
-    browser = await chromium.connectOverCDP(CDP);
-  } catch (e) {
-    erro('Chrome com CDP nao respondeu', { erro: e.message });
-    process.exit(1);
+  // Retry: o CDP as vezes engasga por alguns segundos (chrome-guardiao.log
+  // confirma que o Chrome continua no ar antes e depois desses engasgos, sem
+  // reiniciar) e o connectOverCDP desistia na primeira tentativa.
+  for (let tentativa = 1; tentativa <= 3 && !browser; tentativa++) {
+    try {
+      browser = await chromium.connectOverCDP(CDP);
+    } catch (e) {
+      if (tentativa === 3) {
+        erro('Chrome com CDP nao respondeu', { erro: e.message, tentativas: tentativa });
+        process.exit(1);
+      }
+      await new Promise((r) => setTimeout(r, 10000));
+    }
   }
 
   const paginas = [];

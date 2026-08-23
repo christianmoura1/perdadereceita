@@ -87,7 +87,17 @@ async function uazapi(endpoint, corpo) {
   try {
     // 1. Excel da aba 13 — a fonte crua
     const saidaExport = rodar('pbi_export13', NODE, ['scripts\\pbi_export13.js']);
-    const xlsx = saidaExport.split(/\r?\n/).filter(Boolean).pop().trim();
+    // `rodar` concatena stdout + stderr, nessa ordem. O caminho do .xlsx sai
+    // por console.log (stdout) e os logs de erro por console.error (stderr),
+    // entao quando o export precisa de uma segunda tentativa as linhas de erro
+    // ficam DEPOIS do caminho e o antigo `.pop()` devolvia um JSON. Em 23/08
+    // isso jogou fora uma exportacao que ja tinha dado certo. Pega de tras
+    // para frente a ultima linha que e' mesmo um arquivo .xlsx.
+    const xlsx = saidaExport
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('{') && /\.xlsx$/i.test(l))
+      .pop() ?? '';
     if (!fs.existsSync(xlsx)) throw new Error(`Excel nao encontrado: ${xlsx}`);
 
     // 2. os % oficiais, lidos da tela (aba 04)
@@ -138,22 +148,10 @@ async function uazapi(endpoint, corpo) {
       }
     }
 
-    // 8. WhatsApp
-    const dirImg = path.join(ROOT, 'imagens');
-    const pngs = ['1-resumo-mtd.png', '2-comentario.png', '3-mudancas.png', '4-consolidado.png']
-      .filter((n) => fs.existsSync(path.join(dirImg, n)));
-    for (const nome of pngs) {
-      const b64 = fs.readFileSync(path.join(dirImg, nome)).toString('base64');
-      await uazapi('/send/media', { number: DESTINO, type: 'image', file: b64 });
-      logInfo('imagem enviada', { arquivo: nome });
-      await new Promise((r) => setTimeout(r, 1500));
-    }
-    const coment = path.join(ROOT, 'comentario.txt');
-    if (fs.existsSync(coment)) {
-      const texto = fs.readFileSync(coment, 'utf8');
-      await uazapi('/send/text', { number: DESTINO, text: texto });
-      logInfo('comentario enviado', { chars: texto.length });
-    }
+    // 8. Entrega persistente pelo Mordomo. O produtor apenas monta e aceita o
+    // pacote; o worker resolve o grupo Testes, retoma cada parte e evita envio
+    // duplicado depois de uma falha ou reinicio.
+    rodar('handoff Mordomo', NODE, ['scripts/enviar_handoff.js']);
 
     logInfo('pipeline diario concluido com sucesso', { seg: Math.round((Date.now() - inicio) / 1000) });
   } catch (e) {

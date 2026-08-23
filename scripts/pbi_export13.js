@@ -147,8 +147,27 @@ async function umaTentativa(page, cliente, tentativa) {
   return { destino, bytes };
 }
 
+// connectOverCDP pode estourar o timeout de 30s mesmo com o Chrome vivo e o
+// websocket conectado (visto em 23/08: "ws connected" no log, e mesmo assim
+// timeout) -- provavel engasgo passageiro na enumeracao de targets logo cedo.
+// O guardiao confirmou o CDP saudavel minutos antes e depois, entao o remedio
+// aqui e' tentar de novo, nao reerguer o Chrome.
+async function conectar(cdp, tentativas = 3) {
+  let ultimoErro;
+  for (let t = 1; t <= tentativas; t++) {
+    try {
+      return await chromium.connectOverCDP(cdp, { timeout: 45000 });
+    } catch (e) {
+      ultimoErro = e;
+      erro('connectOverCDP falhou', { tentativa: t, erro: e.message });
+      if (t < tentativas) await dormir(5000);
+    }
+  }
+  throw ultimoErro;
+}
+
 (async () => {
-  const browser = await chromium.connectOverCDP(CDP);
+  const browser = await conectar(CDP);
 
   let page = null;
   for (const c of browser.contexts()) for (const p of c.pages()) {
@@ -159,6 +178,30 @@ async function umaTentativa(page, cliente, tentativa) {
     throw new Error('a aba esta na tela de login — relogar no Power BI pelo RDP');
   }
   info('aba encontrada');
+
+  // Dois estados da aba que ninguem restaura e que derrubam esta etapa sem
+  // dizer o porque -- os dois aconteceram em 23/08:
+  //   1. aba em segundo plano: o Chrome congela o viewport antigo. Depois que
+  //      o RDP reconectou e mudou a resolucao, ela ficou em 500x345 enquanto a
+  //      janela tinha 1280x673. Nesse tamanho o menu do visual nao mostra
+  //      "Export data", e o erro que chega e' "opcao nao apareceu".
+  //   2. painel de navegacao recolhido: "13. Tabela de Extracao" nem existe no
+  //      DOM, e a busca por texto falha com "pagina nao encontrada no menu".
+  // O guardiao restaura a URL e o login, nunca isto. Como da' para consertar
+  // daqui, conserta em vez de reclamar.
+  await page.bringToFront().catch(() => {});
+  await dormir(3000);
+  const vp = await page.evaluate(() => ({ w: window.innerWidth, h: window.innerHeight })).catch(() => null);
+  if (vp) info('viewport da aba', vp);
+
+  if (!(await page.locator('text=/13\\. Tabela de Extra/i').count())) {
+    const nav = page.locator('[aria-label="Show the navigation pane"]').first();
+    if (await nav.count()) {
+      info('painel de navegacao estava recolhido; abrindo');
+      await nav.click({ force: true }).catch(() => {});
+      await dormir(6000);
+    }
+  }
 
   const cliente = await page.context().newCDPSession(page);
 
