@@ -1,22 +1,21 @@
 {
-  "cleanUrls": true,
   "functions": {
     "api/data.js": {
       "includeFiles": "data/**"
     }
   },
-  "headers": [
+  "routes": [
+    { "src": "/data/dados\\.json", "dest": "/api/data?file=dados" },
+    { "src": "/data/detalhe-mes\\.json", "dest": "/api/data?file=detalhe" },
     {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "no-referrer" }
-      ]
-    }
-  ],
-  "rewrites": [
-    { "source": "/data/dados.json", "destination": "/api/data?file=dados" },
-    { "source": "/data/detalhe-mes.json", "destination": "/api/data?file=detalhe" }
+      "src": "/(.*)",
+      "headers": {
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "no-referrer"
+      },
+      "continue": true
+    },
+    { "handle": "filesystem" }
   ]
 }
