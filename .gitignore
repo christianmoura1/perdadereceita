@@ -13,3 +13,12 @@ __pycache__/
 *.pyc
 browser-profile/
 storage-state.json
+
+# Estado e diagnosticos locais da automacao
+logs/
+pbi_raw/
+downloads/
+comentario.txt
+diag_*.png
+*.log
+*.err
