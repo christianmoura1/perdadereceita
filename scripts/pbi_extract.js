@@ -29,6 +29,31 @@ function stampData() {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
 }
 
+function dataEsperadaISO() {
+  if (process.env.PBI_EXPECTED_DATE) return process.env.PBI_EXPECTED_DATE;
+  const hoje = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+  const d = new Date(`${hoje}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function dataUsaParaISO(valor) {
+  const m = String(valor || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  return m ? `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}` : null;
+}
+
+async function preencherData(campo, valor) {
+  await campo.click({ clickCount: 3 }).catch(() => {});
+  await campo.fill(valor).catch(async () => {
+    await campo.press('Control+a').catch(() => {});
+    await campo.type(valor, { delay: 60 });
+  });
+  await campo.press('Enter').catch(() => {});
+  await new Promise((r) => setTimeout(r, 9000));
+}
+
 // Normaliza quebras de encoding conhecidas nos nomes de regional
 // (innerText as vezes vem com mojibake: "BK A% FOGO LESTE" -> "BK É FOGO LESTE").
 function normalizarRegional(nome) {
@@ -79,6 +104,47 @@ async function clicarAba(frame, nomeRegex, rotulo) {
   }
 }
 
+// Cada pagina do Power BI guarda seu proprio filtro de data. A exportacao da
+// pagina 13 pode fechar no dia mais recente enquanto a pagina 04 continua no
+// dia anterior, o que mistura valores e percentuais de periodos diferentes.
+// Sempre fixa o mes completo: dia 1 ate o limite que o proprio BI informa.
+async function ajustarIntervaloMes(frame) {
+  const info = await frame.evaluate(() => {
+    const i = [...document.querySelectorAll('input')]
+      .find((x) => /End date/i.test(x.getAttribute('aria-label') || ''));
+    if (!i) return null;
+    const m = (i.getAttribute('aria-label') || '').match(/to (\d{1,2}\/\d{1,2}\/\d{4})/);
+    return { atual: i.value, maximo: m ? m[1] : null };
+  });
+  if (!info || !info.maximo) throw new Error('filtro final da pagina 04 nao localizado');
+  const esperada = dataEsperadaISO();
+  if (dataUsaParaISO(info.maximo) !== esperada) {
+    throw new Error(`fechamento incorreto na pagina 04: esperado ${esperada}, encontrado ${info.maximo}`);
+  }
+  const fim = frame.locator('input[aria-label*="End date"]').first();
+  if (info.atual !== info.maximo) await preencherData(fim, info.maximo);
+
+  const inicio = frame.locator('input[aria-label*="Start date"]').first();
+  if (!(await inicio.count())) throw new Error('filtro inicial da pagina 04 nao localizado');
+  const inicioEsperadoISO = `${esperada.slice(0, 7)}-01`;
+  const inicioAtual = await inicio.inputValue();
+  if (dataUsaParaISO(inicioAtual) !== inicioEsperadoISO) {
+    const [ano, mes] = esperada.split('-').map(Number);
+    await preencherData(inicio, `${mes}/1/${ano}`);
+  }
+
+  const final = await frame.evaluate(() => {
+    const inputs = [...document.querySelectorAll('input')];
+    const start = inputs.find((x) => /Start date/i.test(x.getAttribute('aria-label') || ''));
+    const end = inputs.find((x) => /End date/i.test(x.getAttribute('aria-label') || ''));
+    return { inicio: start?.value || null, fim: end?.value || null };
+  });
+  if (dataUsaParaISO(final.inicio) !== inicioEsperadoISO || dataUsaParaISO(final.fim) !== esperada) {
+    throw new Error(`intervalo incorreto na pagina 04: ${final.inicio || '?'} a ${final.fim || '?'}`);
+  }
+  logInfo('intervalo mensal confirmado na pagina 04', final);
+}
+
 // ---------- parsers ----------
 
 // Tabela "Perda de receita por data" (aba inicial).
@@ -114,10 +180,13 @@ function parsePorData(txt) {
       continue;
     }
     if (linhas[k] === 'Total') {
-      // Acha os dois proximos valores nao-vazios: perda total e pct total.
-      const prox = linhas.slice(k + 1).filter((l) => l !== '');
-      if (dinheiroRe.test(prox[0] || '') && pctRe.test(prox[1] || '')) {
-        total = { perdaTotal: prox[0], pctTotal: prox[1] };
+      // O Power BI pode inserir marcadores de acessibilidade entre "Total"
+      // e os valores. Procura os proximos dinheiro e percentual validos.
+      const prox = linhas.slice(k + 1, k + 20).filter((l) => l !== '');
+      const perdaTotal = prox.find((l) => dinheiroRe.test(l));
+      const pctTotal = prox.find((l) => pctRe.test(l));
+      if (perdaTotal && pctTotal) {
+        total = { perdaTotal, pctTotal };
       }
       break;
     }
@@ -170,8 +239,10 @@ async function capturarLinhasPorData(frame) {
           if (!linhas.has(ls[k])) linhas.set(ls[k], [ls[k], ls[k + 1] || '', ls[k + 2], ls[k + 3]]);
         }
         if (ls[k] === 'Total') {
-          const prox = ls.slice(k + 1).filter(Boolean);
-          if (dinRe.test(prox[0] || '') && pctRe.test(prox[1] || '')) total = [prox[0], prox[1]];
+          const prox = ls.slice(k + 1, k + 20).filter(Boolean);
+          const perdaTotal = prox.find((l) => dinRe.test(l));
+          const pctTotal = prox.find((l) => pctRe.test(l));
+          if (perdaTotal && pctTotal) total = [perdaTotal, pctTotal];
         }
       }
     };
@@ -216,7 +287,10 @@ async function mesclarPorDataCompleta(frame, txt) {
     }
     let total = cap.total;
     if (!total) {
-      try { total = parsePorData(txt).total; } catch { /* segue sem total do texto */ }
+      try {
+        const totalTexto = parsePorData(txt).total;
+        total = [totalTexto.perdaTotal, totalTexto.pctTotal];
+      } catch { /* segue sem total do texto */ }
     }
     const i = txt.indexOf('Perda de receita por data');
     const fim = txt.indexOf('Perda de receita por subcategoria', i);
@@ -551,8 +625,9 @@ async function extrairPctPorRegional(frame, page) {
   if (!page) fatal('aba app.powerbi.com nao encontrada no Chrome depuravel');
   logInfo('aba encontrada', { url: page.url().slice(0, 120) });
 
-  // 2. F5 + espera adaptativa ate renderizar
-  await page.reload({ waitUntil: 'domcontentloaded' }).catch((e) => logInfo('reload aviso', { erro: e.message.slice(0, 120) }));
+  // Nao recarregar aqui. Cada pagina guarda filtros proprios e o F5 restaura
+  // o estado antigo do autor, apagando o ajuste mensal feito pelo usuario.
+  // A etapa anterior ja validou que o Power BI esta atualizado ate ontem.
   const frame = page.frames()[0];
   // Marcador exige a TABELA, nao o titulo do menu lateral ("Perda de receita"
   // sozinho aparece cedo demais, antes dos dados renderizarem).
@@ -563,7 +638,7 @@ async function extrairPctPorRegional(frame, page) {
   await esperarTexto(frame, 'Perda de receita', RELOAD_TIMEOUT_MS)
     .catch((e) => fatal('relatorio nao renderizou apos F5', { erro: e.message }));
   await page.waitForTimeout(3000);
-  logInfo('relatorio renderizado apos reload');
+  logInfo('relatorio renderizado sem restaurar filtros antigos');
 
   const saidas = {};
   const abas = [
@@ -578,6 +653,7 @@ async function extrairPctPorRegional(frame, page) {
   for (const aba of abas) {
     await clicarAba(frame, aba.regex, aba.rotulo).catch((e) => fatal(e.message));
     await page.waitForTimeout(WAIT_RENDER_MS);
+    if (aba.rotulo === 'por-data') await ajustarIntervaloMes(frame);
     // espera adaptativa extra pelo marcador da aba (best effort, nao fatal)
     let txt;
     try {
@@ -590,6 +666,29 @@ async function extrairPctPorRegional(frame, page) {
     logInfo('aba capturada', { aba: aba.rotulo, chars: txt.length });
 
     if (aba.rotulo === 'por-data') {
+      // GUARDA (31/08/2026): as % por regional so' valem com o recorte
+      // BKB + MANUTENCAO ativo. Sem MANUTENCAO os numeros vem de outra
+      // categoria -- reais, mas errados; em 31/08 publicaram % achatadas
+      // (~0,2%) porque a guarda so' checava "veio do BI?", nao "o recorte
+      // certo estava marcado?". Falha FECHADA, fora do try para o fatal nao
+      // ser engolido. Casamento sem acento para nao depender de codificacao.
+      const recorte = await page.evaluate(() => {
+        const norm = (s) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/\s+/g, ' ').trim().toUpperCase();
+        const g = (alvo) => {
+          const e = [...document.querySelectorAll('[aria-pressed]')]
+            .find((x) => norm(x.textContent) === alvo);
+          return e ? e.getAttribute('aria-pressed') === 'true' : null;
+        };
+        return { bkb: g('BKB'), man: g('MANUTENCAO') };
+      });
+      if (recorte.bkb !== true || recorte.man !== true) {
+        fatal('recorte errado no Power BI: BKB e MANUTENCAO precisam estar selecionados', {
+          bkb: recorte.bkb, manutencao: recorte.man,
+          dica: 'abrir a aba de Perda de Receita no Chrome da VPS e marcar BKB + MANUTENCAO',
+        });
+      }
+      logInfo('recorte confirmado: BKB + MANUTENCAO selecionados');
       try {
         regPct = await extrairPctPorRegional(frame, page);
         logInfo('pct por regional extraido', {
