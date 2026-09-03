@@ -1,0 +1,68 @@
+﻿{
+    "BK Ã‰ FOGO NORTE":  {
+                             "rest":  32,
+                             "projVenda":  25569546,
+                             "objMes":  189215,
+                             "objDia":  6307
+                         },
+    "BK Ã‰ FOGO LESTE":  {
+                             "rest":  68,
+                             "projVenda":  48251872,
+                             "objMes":  357064,
+                             "objDia":  11902
+                         },
+    "BK É FOGO CENTRO LITORAL":  {
+                                     "rest":  34,
+                                     "projVenda":  15883260,
+                                     "objMes":  117536,
+                                     "objDia":  3918
+                                 },
+    "SP SUL":  {
+                   "rest":  65,
+                   "projVenda":  35081591,
+                   "objMes":  259604,
+                   "objDia":  8653
+               },
+    "SP INTERIOR NORTE":  {
+                              "rest":  69,
+                              "projVenda":  32494782,
+                              "objMes":  240461,
+                              "objDia":  8015
+                          },
+    "SP INTERIOR SUL":  {
+                            "rest":  57,
+                            "projVenda":  30856039,
+                            "objMes":  228335,
+                            "objDia":  7611
+                        },
+    "CENTRO OESTE":  {
+                         "rest":  65,
+                         "projVenda":  37897181,
+                         "objMes":  280439,
+                         "objDia":  9348
+                     },
+    "MINAS BAHIA":  {
+                        "rest":  54,
+                        "projVenda":  36750188,
+                        "objMes":  271951,
+                        "objDia":  9065
+                    },
+    "NE":  {
+               "rest":  85,
+               "projVenda":  58366636,
+               "objMes":  431913,
+               "objDia":  14397
+           },
+    "RJ":  {
+               "rest":  93,
+               "projVenda":  45587501,
+               "objMes":  337348,
+               "objDia":  11245
+           },
+    "SUL":  {
+                "rest":  71,
+                "projVenda":  37276683,
+                "objMes":  275847,
+                "objDia":  9195
+            }
+}
