@@ -3,6 +3,7 @@ const {
   safeEqual,
   sessionCookie,
 } = require('../lib/auth');
+const auth = require('../config/dashboard-auth.json');
 
 module.exports = function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -10,9 +11,9 @@ module.exports = function handler(req, res) {
 
   try {
     const { username = '', password = '' } = req.body || {};
-    const valid = safeEqual(username, process.env.DASHBOARD_USER || '')
-      && safeEqual(password, process.env.DASHBOARD_PASSWORD || '');
-    if (!valid || !process.env.DASHBOARD_USER || !process.env.DASHBOARD_PASSWORD) {
+    const valid = safeEqual(username, auth.user || '')
+      && safeEqual(password, auth.password || '');
+    if (!valid) {
       return res.status(401).json({ error: 'Usuario ou senha incorretos' });
     }
 
