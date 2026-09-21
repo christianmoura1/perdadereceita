@@ -14,6 +14,7 @@
 //   3. resumo_para_pct.py   resumo -> pct.json
 //   4. gerar_dados.py       Excel + pct -> data/dados.json + data/detalhe-mes.json
 //   5. verifica.py          guarda de publicacao (COM detalhe)
+//  5b. status_chamados.js  SOMA -> data/chamados-status.json (TOLERANTE)
 //   6. gerar_relatorio.py + gerar_imagens.py
 //   7. git add/commit/push (chave de deploy SSH)
 //   8. WhatsApp: 4 PNGs + comentario
@@ -40,6 +41,16 @@ const agora = () => new Date().toISOString();
 const logInfo = (msg, extra) => console.log(JSON.stringify({ ts: agora(), level: 'info', msg, ...extra }));
 const logErro = (msg, extra) => console.error(JSON.stringify({ ts: agora(), level: 'error', msg, ...extra }));
 
+function dataEsperadaISO() {
+  if (process.env.PBI_EXPECTED_DATE) return process.env.PBI_EXPECTED_DATE;
+  const hoje = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+  const d = new Date(`${hoje}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
 // env Machine nem sempre chega ao processo (SYSTEM/SSH) — le do registro.
 function envMachine(nome) {
   if (process.env[nome]) return process.env[nome];
@@ -65,6 +76,49 @@ function rodar(rotulo, cmd, args, opcoes = {}) {
     throw new Error(`${rotulo} falhou (exit ${r.status}): ${saida.slice(-400)}`);
   }
   return saida;
+}
+
+// Le' o valor exatamente como o Power BI mostrou na tela, e o formato muda
+// com o idioma da conta: pt-BR usa ponto como milhar e virgula como decimal
+// ("R$ 2.481.078"); en usa virgula como milhar e ponto como decimal. Sem
+// normalizar isso, "2.481.078" virava NaN (multiplos pontos nao sao numero
+// valido em JS) e a guarda de cruzamento 04x13 bloqueava a publicacao.
+function numeroMoeda(valor) {
+  let s = String(valor || '').replace(/[^0-9.,-]/g, '');
+  if (!s) return NaN;
+  const pontos = (s.match(/\./g) || []).length;
+  const virgulas = (s.match(/,/g) || []).length;
+  if (pontos > 0 && virgulas > 0) {
+    // os dois presentes: o que vier POR ULTIMO e' o separador decimal
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+    else s = s.replace(/,/g, '');
+  } else if (virgulas > 1) {
+    s = s.replace(/,/g, '');            // "1,234,567" -> milhar en
+  } else if (pontos > 1) {
+    s = s.replace(/\./g, '');           // "2.481.078" -> milhar pt-BR
+  } else if (virgulas === 1) {
+    s = s.replace(',', '.');            // "1234,56" -> decimal pt-BR
+  } else if (pontos === 1) {
+    // UM ponto sozinho e' ambiguo. Com exatamente 3 digitos depois e' milhar
+    // pt-BR ("R$ 325.716" = 325716); com 1 ou 2 e' decimal ("325.72").
+    // Sem esta regra, "R$ 325.716" virava 325,716 e "R$ 2.481.078" virava NaN
+    // -- foi o que produziu "tela=325.72" e "tela=invalido" no guard de
+    // cruzamento 04x13 em 15/09/2026.
+    const depois = s.length - s.lastIndexOf('.') - 1;
+    if (depois === 3) s = s.replace('.', '');
+  }
+  const n = Number(s);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function ultimoResumoPbi() {
+  const dir = path.join(ROOT, 'pbi_raw');
+  const arquivos = fs.readdirSync(dir)
+    .filter((n) => /^resumo-\d{8}\.json$/i.test(n))
+    .map((n) => ({ n, t: fs.statSync(path.join(dir, n)).mtimeMs }))
+    .sort((a, b) => b.t - a.t);
+  if (!arquivos.length) throw new Error('resumo do Power BI nao encontrado');
+  return JSON.parse(fs.readFileSync(path.join(dir, arquivos[0].n), 'utf8'));
 }
 
 async function uazapi(endpoint, corpo) {
@@ -121,10 +175,36 @@ async function uazapi(endpoint, corpo) {
     if (!dia || dia === 'undefined' || !pct || pct === 'undefined' || Number(total) <= 0) {
       throw new Error(`dados.json sem referencia valida (dia=${dia} pct=${pct} total=${total})`);
     }
+    const esperada = dataEsperadaISO();
+    const fechamento = String(ma.atualizadoEm || '');
+    if (fechamento !== esperada) {
+      throw new Error(`publicacao bloqueada: esperado fechamento ${esperada}, dados.json esta em ${fechamento || 'data ausente'}`);
+    }
+
+    // A pagina 04 e a pagina 13 guardam filtros independentes. Em 31/08 a
+    // pagina 04 ficou em outro estado e devolveu R$ 984 mil / 0,30%, enquanto
+    // o Excel da pagina 13 somava R$ 6,3 milhoes. Sem este cruzamento o numero
+    // parecia valido e foi publicado. As duas fontes precisam fechar no real.
+    const resumoPbi = ultimoResumoPbi();
+    const totalTela = numeroMoeda(resumoPbi?.total?.perdaTotal);
+    const totalExcel = Number(total);
+    if (!Number.isFinite(totalTela) || Math.abs(totalTela - totalExcel) > 20) {
+      throw new Error(
+        `publicacao bloqueada: filtros das paginas 04 e 13 divergem ` +
+        `(tela=${Number.isFinite(totalTela) ? totalTela.toFixed(2) : 'invalido'}, ` +
+        `excel=${totalExcel.toFixed(2)})`,
+      );
+    }
     logInfo('referencia do BI', { dia: Number(dia), pctBrasil: Number(pct), totalBrasil: Number(total) });
 
     // 5. guarda de publicacao — agora COM o detalhe (a aba 13 fornece)
     rodar('verifica', PYTHON, ['verifica.py', '--dia', dia, '--pct', pct, '--total', total, '--tol', '20']);
+
+    // 5b. situacao de cada chamado no SOMA -> data/chamados-status.json
+    // TOLERANTE de proposito: se o SOMA estiver deslogado, o painel abre do
+    // mesmo jeito e a coluna Situacao mostra "—". Nao vale travar a publicacao
+    // do relatorio da manha por causa de um enriquecimento.
+    rodar('status_chamados', NODE, ['scripts\\status_chamados.js'], { tolerante: true });
 
     // 6. relatorio e imagens
     rodar('gerar_relatorio', PYTHON, ['gerar_relatorio.py']);
@@ -154,6 +234,10 @@ async function uazapi(endpoint, corpo) {
     rodar('handoff Mordomo', NODE, ['scripts/enviar_handoff.js']);
 
     logInfo('pipeline diario concluido com sucesso', { seg: Math.round((Date.now() - inicio) / 1000) });
+    process.exit(0); // sem isso o processo fica pendurado (conexao CDP do Playwright
+    // nao solta o event loop sozinha) -- mesmo bug ja corrigido no chamados/run_daily.cjs.
+    // O pipeline TERMINA de verdade (git push e handoff ja rodaram), mas o processo
+    // Node nunca retorna, entao toda chamada via SSH parece travar/nao completar.
   } catch (e) {
     logErro('pipeline falhou', { erro: e.message.slice(0, 500), seg: Math.round((Date.now() - inicio) / 1000) });
     try {

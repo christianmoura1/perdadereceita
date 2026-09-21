@@ -993,7 +993,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   #det-modal-overlay.open { animation: none; }
 }
-.dd-ocs-wrap { max-height: 320px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+.dd-ocs-wrap { max-height: 320px; overflow-y: auto; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
 .dd-ocs-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
 .dd-ocs-table thead th { position: sticky; top: 0; background: #f4f6fb; padding: 8px 10px; text-align: left; font-size: .66rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #e2e8f0; z-index: 1; }
 .dd-ocs-table thead th.num { text-align: right; }
@@ -1001,7 +1001,16 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .dd-ocs-table tbody tr:hover { background: #f8fafc; }
 .dd-oc-hora { font-family: 'Inter', monospace; font-weight: 600; color: #6d28d9; width: 50px; }
 .dd-oc-loja { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dd-oc-cat { color: #475569; }
+.dd-oc-cat { color: #475569; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dd-oc-reg { color: #475569; white-space: nowrap; }
+/* Situacao do chamado: precisa saltar aos olhos, e' a pergunta que o painel responde */
+.dd-oc-sit { white-space: nowrap; width: 1%; }
+.sit-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; line-height: 1.5; }
+.sit-ab  { background: #fee2e2; color: #b91c1c; box-shadow: inset 0 0 0 1px #fca5a5; }
+.sit-fe  { background: #dcfce7; color: #15803d; box-shadow: inset 0 0 0 1px #86efac; }
+.sit-ind { background: #f1f5f9; color: #94a3b8; box-shadow: inset 0 0 0 1px #e2e8f0; }
+.dd-ocs-resumo { display: flex; gap: 10px; align-items: center; margin: 2px 0 8px; font-size: .74rem; color: #64748b; flex-wrap: wrap; }
+.dd-ocs-resumo b { color: #1e293b; }
 .dd-oc-chamado { font-family: 'Inter', monospace; color: #64748b; font-size: .76rem; white-space: nowrap; }
 .dd-oc-val { font-weight: 700; color: #1e293b; text-align: right; white-space: nowrap; }
 .dd-oc-total-row { background: #f4f6fb; font-weight: 700; }
@@ -1269,11 +1278,59 @@ function badge(pct) {
 // (antes ficavam embutidos aqui como literais; ver scripts/gerar_dados.py)
 // ============================================================
 var mesesLabels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+// ---- situacao do chamado (vem de data/chamados-status.json, cruzado com o SOMA) ----
+// Uma ocorrencia pode citar VARIOS chamados: "WO0041674, WO0041677". Se qualquer
+// um deles ainda estiver aberto, a perda ainda esta sangrando -- entao vale ABERTO.
+var QUEBRA_TIT = String.fromCharCode(10);
+function chamadosDe(txt) {
+  return String(txt || '').toUpperCase().split(/[,;]+/)
+    .map(function(x){ return x.trim(); })
+    .filter(function(x){ return /^WO\d+$/.test(x); });
+}
+function situacaoOc(txt) {
+  var ns = chamadosDe(txt);
+  if (!ns.length || !STATUS_CH) return { cls: 'sit-ind', txt: '—', tit: 'sem informação do SOMA' };
+  var abertos = [], fechados = [], semInfo = [];
+  ns.forEach(function(n) {
+    var s = STATUS_CH[n];
+    if (!s) semInfo.push(n);
+    else if (s.aberto) abertos.push(n + ' — ' + s.estado);
+    else fechados.push(n + ' — ' + s.estado);
+  });
+  if (abertos.length) return {
+    cls: 'sit-ab',
+    txt: abertos.length > 1 ? 'Aberto (' + abertos.length + ')' : 'Aberto',
+    tit: abertos.concat(fechados).join(QUEBRA_TIT)
+  };
+  if (fechados.length) return { cls: 'sit-fe', txt: 'Encerrado', tit: fechados.join(QUEBRA_TIT) };
+  return { cls: 'sit-ind', cls2: 1, txt: '—', tit: 'não encontrado no SOMA: ' + semInfo.join(', ') };
+}
+function celulaSit(txt) {
+  var s = situacaoOc(txt);
+  return '<td class="dd-oc-sit"><span class="sit-pill ' + s.cls + '" title="' + String(s.tit).replace(/"/g,'') + '">' + s.txt + '</span></td>';
+}
+function resumoSit(lista) {
+  var ab = 0, fe = 0, nd = 0, perdaAb = 0;
+  lista.forEach(function(o) {
+    var s = situacaoOc(o.chamado);
+    if (s.cls === 'sit-ab') { ab++; perdaAb += (o.perda || 0); }
+    else if (s.cls === 'sit-fe') fe++; else nd++;
+  });
+  if (!STATUS_CH) return '<div class="dd-ocs-resumo">Situação dos chamados indisponível.</div>';
+  return '<div class="dd-ocs-resumo">'
+    + '<span class="sit-pill sit-ab">Aberto</span> <b>' + ab + '</b> ocorrências'
+    + (perdaAb > 0 ? ' · <b>' + fmtD(perdaAb) + '</b> ainda sangrando' : '')
+    + ' &nbsp;·&nbsp; <span class="sit-pill sit-fe">Encerrado</span> <b>' + fe + '</b>'
+    + (nd ? ' &nbsp;·&nbsp; <span class="sit-pill sit-ind">—</span> <b>' + nd + '</b> sem chamado' : '')
+    + '</div>';
+}
 var LABEL_REG, regionaisData, brasil2025, brasil2026, regNames;
 var mesAtual, historico;
 var mesData, mesExtra, mesDias, brasilMesVals, metaDiaMes, mesNames, mesAnterior, pctTotalMes;
 var MES_NOME, MES_ANO, MES_DIAS, MES_ISO;
 var detAgg = null, dashboardIniciado = false;
+var STATUS_CH = null, STATUS_META = null;
 
 var dadosProntos = null, detAggPronto = null;
 
@@ -1300,10 +1357,19 @@ function carregarDados() {
   });
 
 // Detalhamento (1MB+) baixa em segundo plano — o painel abre sem esperar por ele
-  detAggPronto = fetch('/api/data?file=detalhe', { credentials: 'same-origin' }).then(function(r){
-    if (!r.ok) throw new Error('Detalhamento indisponível (' + r.status + ')');
-    return r.json();
-  }).then(function(d) {
+  detAggPronto = Promise.all([
+    fetch('/api/data?file=detalhe', { credentials: 'same-origin' }).then(function(r){
+      if (!r.ok) throw new Error('Detalhamento indisponível (' + r.status + ')');
+      return r.json();
+    }),
+    // situacao dos chamados no SOMA; se faltar, o painel abre igual e mostra "—"
+    fetch('/api/data?file=status', { credentials: 'same-origin' })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .catch(function(){ return null; })
+  ]).then(function(res) {
+  var d = res[0];
+  STATUS_CH = (res[1] && res[1].mapa) ? res[1].mapa : null;
+  STATUS_META = res[1] || null;
   detAgg = d;
   if (dashboardIniciado) {
     mesNames.forEach(function(reg) {
@@ -2104,16 +2170,18 @@ function openDrillDown(reg, diaISO, diaLabel) {
   var ocsRows = (p.ocs || []).map(function(o) {
     somaOcs += o.perda;
     var hh = (o.hora !== null && o.hora !== undefined) ? (o.hora < 10 ? '0'+o.hora : ''+o.hora) + 'h' : '—';
-    var busca = (hh + ' ' + o.loja + ' ' + (o.cat||'') + ' ' + (o.chamado||'')).toLowerCase();
+    var sit = situacaoOc(o.chamado);
+    var busca = (hh + ' ' + o.loja + ' ' + (o.cat||'') + ' ' + (o.chamado||'') + ' ' + sit.txt).toLowerCase();
     return '<tr data-b="' + busca.replace(/"/g,'') + '">'
       + '<td class="dd-oc-hora">' + hh + '</td>'
       + '<td class="dd-oc-loja" title="' + o.loja + '">' + o.loja + '</td>'
-      + '<td class="dd-oc-cat">' + (o.cat || '—') + '</td>'
+      + '<td class="dd-oc-cat" title="' + String(o.cat||'').replace(/"/g,'') + '">' + (o.cat || '—') + '</td>'
       + '<td class="dd-oc-chamado">' + (o.chamado || '—') + '</td>'
+      + celulaSit(o.chamado)
       + '<td class="dd-oc-val">' + fmtD(o.perda) + '</td>'
       + '</tr>';
   }).join('');
-  var ocsTotalRow = '<tr class="dd-oc-total-row"><td colspan="4">Total</td>'
+  var ocsTotalRow = '<tr class="dd-oc-total-row"><td colspan="6">Total</td>'
     + '<td class="dd-oc-val">' + fmtD(somaOcs) + '</td></tr>';
 
   bodyEl.innerHTML = headerHTML + chartsHTML
@@ -2124,9 +2192,10 @@ function openDrillDown(reg, diaISO, diaLabel) {
       + '</div>'
     + '</div>'
     + '<div class="dd-section"><h4>Ocorrências (Chamados) Detalhadas <span class="dd-oc-count" id="dd-oc-count">' + p.oc + ' de ' + p.oc + '</span></h4>'
-      + '<input class="dd-oc-filter" id="dd-oc-filter" type="text" placeholder="Filtrar por loja, categoria ou chamado">'
+      + resumoSit(p.ocs || [])
+      + '<input class="dd-oc-filter" id="dd-oc-filter" type="text" placeholder="Filtrar por loja, categoria, chamado ou situação (ex.: aberto)">'
       + '<div class="dd-ocs-wrap"><table class="dd-ocs-table"><thead><tr>'
-        + '<th>Hora</th><th>Loja</th><th>Categoria</th><th>Chamado</th><th class="num">Perda</th>'
+        + '<th>Hora</th><th>Loja</th><th>Categoria</th><th>Chamado</th><th>Situação</th><th class="num">Perda</th>'
       + '</tr></thead><tbody id="dd-ocs-body">' + ocsRows + ocsTotalRow + '</tbody></table></div>'
     + '</div>';
 
@@ -2295,13 +2364,15 @@ function openBrasilDrillDown(diaISO, diaLabel) {
   var ocsRows = ocs.map(function(o) {
     somaOcs += o.perda;
     var hh = (o.hora !== null && o.hora !== undefined) ? (o.hora < 10 ? '0'+o.hora : ''+o.hora) + 'h' : '—';
-    var busca = (hh + ' ' + lbl(o.reg) + ' ' + o.loja + ' ' + (o.cat||'') + ' ' + (o.chamado||'')).toLowerCase();
+    var sit = situacaoOc(o.chamado);
+    var busca = (hh + ' ' + lbl(o.reg) + ' ' + o.loja + ' ' + (o.cat||'') + ' ' + (o.chamado||'') + ' ' + sit.txt).toLowerCase();
     return '<tr data-b="' + busca.replace(/"/g,'') + '">'
       + '<td class="dd-oc-hora">' + hh + '</td>'
-      + '<td class="dd-oc-cat">' + lbl(o.reg) + '</td>'
+      + '<td class="dd-oc-reg">' + lbl(o.reg) + '</td>'
       + '<td class="dd-oc-loja" title="' + o.loja + '">' + o.loja + '</td>'
-      + '<td class="dd-oc-cat">' + (o.cat || '—') + '</td>'
+      + '<td class="dd-oc-cat" title="' + String(o.cat||'').replace(/"/g,'') + '">' + (o.cat || '—') + '</td>'
       + '<td class="dd-oc-chamado">' + (o.chamado || '—') + '</td>'
+      + celulaSit(o.chamado)
       + '<td class="dd-oc-val">' + fmtD(o.perda) + '</td>'
       + '</tr>';
   }).join('');
@@ -2316,9 +2387,10 @@ function openBrasilDrillDown(diaISO, diaLabel) {
       + '</div>'
     + '</div>'
     + '<div class="dd-section"><h4>Ocorrências (Chamados) Detalhadas <span class="dd-oc-count" id="dd-oc-count">' + oc + ' de ' + oc + '</span></h4>'
-      + '<input class="dd-oc-filter" id="dd-oc-filter" type="text" placeholder="Filtrar por loja, regional, categoria ou chamado">'
+      + resumoSit(ocs)
+      + '<input class="dd-oc-filter" id="dd-oc-filter" type="text" placeholder="Filtrar por loja, regional, categoria, chamado ou situação (ex.: aberto)">'
       + '<div class="dd-ocs-wrap"><table class="dd-ocs-table"><thead><tr>'
-        + '<th>Hora</th><th>Regional</th><th>Loja</th><th>Categoria</th><th>Chamado</th><th class="num">Perda</th>'
+        + '<th>Hora</th><th>Regional</th><th>Loja</th><th>Categoria</th><th>Chamado</th><th>Situação</th><th class="num">Perda</th>'
       + '</tr></thead><tbody id="dd-ocs-body">' + ocsRows + ocsTotalRow + '</tbody></table></div>'
     + '</div>';
 

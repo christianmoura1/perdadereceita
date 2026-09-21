@@ -5,6 +5,7 @@ const { verifySession } = require('../lib/auth');
 const FILES = {
   dados: 'dados.json',
   detalhe: 'detalhe-mes.json',
+  status: 'chamados-status.json',
 };
 
 module.exports = function handler(req, res) {
