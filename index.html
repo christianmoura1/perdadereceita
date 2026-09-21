@@ -1011,7 +1011,21 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .sit-ind { background: #f1f5f9; color: #94a3b8; box-shadow: inset 0 0 0 1px #e2e8f0; }
 .dd-ocs-resumo { display: flex; gap: 10px; align-items: center; margin: 2px 0 8px; font-size: .74rem; color: #64748b; flex-wrap: wrap; }
 .dd-ocs-resumo b { color: #1e293b; }
-.dd-oc-chamado { font-family: 'Inter', monospace; color: #64748b; font-size: .76rem; white-space: nowrap; }
+/* Chamado: NAO pode ser nowrap. Uma ocorrencia com 4 WOs esticava a tabela e
+   empurrava Situacao e Perda para fora da tela. Agora as etiquetas quebram. */
+.dd-oc-chamado { font-family: 'Inter', monospace; color: #64748b; font-size: .76rem; max-width: 190px; }
+.ch-chip { display: inline-block; padding: 1px 6px; margin: 1px 3px 1px 0; border-radius: 4px; font-size: .7rem; letter-spacing: .01em; white-space: nowrap; }
+.ch-ab { background: #fee2e2; color: #b91c1c; font-weight: 700; }
+.ch-fe { background: #f1f5f9; color: #94a3b8; font-weight: 500; }
+.ch-nd { background: #f8fafc; color: #cbd5e1; font-weight: 500; }
+.ch-mais { display: inline-block; margin-left: 4px; font-size: .68rem; color: #94a3b8; font-style: italic; }
+.dd-ocs-abertos { margin: 0 0 8px; padding: 9px 11px; border-radius: 8px; background: #fef2f2; border: 1px solid #fecaca; font-size: .74rem; }
+.dd-ocs-abertos .rot { display: block; font-weight: 700; color: #b91c1c; text-transform: uppercase; font-size: .64rem; letter-spacing: .05em; margin-bottom: 7px; }
+.ch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 5px; }
+.ch-linha { display: flex; align-items: baseline; gap: 6px; background: #fff; border: 1px solid #fecaca; border-radius: 6px; padding: 3px 8px 3px 4px; min-width: 0; }
+.ch-linha b { color: #b91c1c; font-weight: 800; font-size: .76rem; white-space: nowrap; margin-left: auto; }
+.ch-linha i { color: #94a3b8; font-style: normal; font-size: .62rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 68px; }
+.ch-nota { margin-top: 7px; font-size: .66rem; color: #b91c1c; opacity: .75; }
 .dd-oc-val { font-weight: 700; color: #1e293b; text-align: right; white-space: nowrap; }
 .dd-oc-total-row { background: #f4f6fb; font-weight: 700; }
 .dd-oc-total-row td { border-top: 2px solid #e0e3ef; padding: 9px 10px; color: #1a1d2b; position: sticky; bottom: 0; background: #f4f6fb; }
@@ -1310,20 +1324,75 @@ function celulaSit(txt) {
   var s = situacaoOc(txt);
   return '<td class="dd-oc-sit"><span class="sit-pill ' + s.cls + '" title="' + String(s.tit).replace(/"/g,'') + '">' + s.txt + '</span></td>';
 }
+// A coluna Chamado mostra cada WO como uma etiqueta propria: vermelha se ainda
+// esta aberto, cinza apagada se encerrou. Assim, numa linha com quatro chamados,
+// da' pra ver de relance QUAL deles ainda esta' sangrando.
+function celulaChamados(txt) {
+  var ns = chamadosDe(txt);
+  if (!ns.length) return '<td class="dd-oc-chamado">' + (txt ? String(txt) : '—') + '</td>';
+  var chips = ns.map(function(n) {
+    var s = STATUS_CH ? STATUS_CH[n] : null;
+    var cls = !s ? 'ch-nd' : (s.aberto ? 'ch-ab' : 'ch-fe');
+    var tit = !s ? n + ' — sem informação do SOMA' : n + ' — ' + s.estado;
+    return '<span class="ch-chip ' + cls + '" title="' + tit.replace(/"/g,'') + '">' + n + '</span>';
+  }).join('');
+  return '<td class="dd-oc-chamado">' + chips + '</td>';
+}
+
 function resumoSit(lista) {
   var ab = 0, fe = 0, nd = 0, perdaAb = 0;
+  var porChamado = {}, ordemAbertos = [];
   lista.forEach(function(o) {
     var s = situacaoOc(o.chamado);
     if (s.cls === 'sit-ab') { ab++; perdaAb += (o.perda || 0); }
     else if (s.cls === 'sit-fe') fe++; else nd++;
+
+    // Quanto CADA chamado aberto esta' perdendo NESTE dia. Quando a ocorrencia
+    // cita varios chamados nao da' pra saber de quem e' qual parte, entao a
+    // perda e' RATEADA em partes iguais. Isso fica escrito na tela.
+    var ns = chamadosDe(o.chamado);
+    if (!ns.length) return;
+    var fatia = (o.perda || 0) / ns.length;
+    ns.forEach(function(n) {
+      var st = STATUS_CH ? STATUS_CH[n] : null;
+      if (!st || !st.aberto) return;
+      if (!porChamado[n]) { porChamado[n] = 0; ordemAbertos.push(n); }
+      porChamado[n] += fatia;
+    });
   });
   if (!STATUS_CH) return '<div class="dd-ocs-resumo">Situação dos chamados indisponível.</div>';
+
+  ordemAbertos.sort(function(a, b) { return porChamado[b] - porChamado[a]; });
+  var LIMITE = 15;
+  var mostrar = ordemAbertos.slice(0, LIMITE);
+  var sobra = ordemAbertos.length - mostrar.length;
+  var rateou = lista.some(function(o) { return chamadosDe(o.chamado).length > 1; });
+
+  var listaAbertos = ordemAbertos.length
+    ? '<div class="dd-ocs-abertos">'
+        + '<div class="rot">Chamados ainda abertos neste dia (' + ordemAbertos.length + ') — do que mais perde para o que menos perde</div>'
+        + '<div class="ch-grid">'
+        + mostrar.map(function(n) {
+            var st = STATUS_CH[n];
+            return '<span class="ch-linha" title="' + n + ' — ' + String(st.estado).replace(/"/g,'') + ' — ' + fmtD(porChamado[n]) + '">'
+              + '<span class="ch-chip ch-ab">' + n + '</span>'
+              + '<i>' + st.estado + '</i>'
+              + '<b>' + fmtD(porChamado[n]) + '</b>'
+              + '</span>';
+          }).join('')
+        + '</div>'
+        + (sobra > 0 ? '<span class="ch-mais">+' + sobra + ' com perda menor — filtre por "aberto" para ver todos</span>' : '')
+        + (rateou ? '<div class="ch-nota">Quando uma ocorrência cita mais de um chamado, a perda é dividida igualmente entre eles.</div>' : '')
+      + '</div>'
+    : '';
+
   return '<div class="dd-ocs-resumo">'
     + '<span class="sit-pill sit-ab">Aberto</span> <b>' + ab + '</b> ocorrências'
     + (perdaAb > 0 ? ' · <b>' + fmtD(perdaAb) + '</b> ainda sangrando' : '')
     + ' &nbsp;·&nbsp; <span class="sit-pill sit-fe">Encerrado</span> <b>' + fe + '</b>'
     + (nd ? ' &nbsp;·&nbsp; <span class="sit-pill sit-ind">—</span> <b>' + nd + '</b> sem chamado' : '')
-    + '</div>';
+    + '</div>'
+    + listaAbertos;
 }
 var LABEL_REG, regionaisData, brasil2025, brasil2026, regNames;
 var mesAtual, historico;
@@ -2176,7 +2245,7 @@ function openDrillDown(reg, diaISO, diaLabel) {
       + '<td class="dd-oc-hora">' + hh + '</td>'
       + '<td class="dd-oc-loja" title="' + o.loja + '">' + o.loja + '</td>'
       + '<td class="dd-oc-cat" title="' + String(o.cat||'').replace(/"/g,'') + '">' + (o.cat || '—') + '</td>'
-      + '<td class="dd-oc-chamado">' + (o.chamado || '—') + '</td>'
+      + celulaChamados(o.chamado)
       + celulaSit(o.chamado)
       + '<td class="dd-oc-val">' + fmtD(o.perda) + '</td>'
       + '</tr>';
@@ -2371,7 +2440,7 @@ function openBrasilDrillDown(diaISO, diaLabel) {
       + '<td class="dd-oc-reg">' + lbl(o.reg) + '</td>'
       + '<td class="dd-oc-loja" title="' + o.loja + '">' + o.loja + '</td>'
       + '<td class="dd-oc-cat" title="' + String(o.cat||'').replace(/"/g,'') + '">' + (o.cat || '—') + '</td>'
-      + '<td class="dd-oc-chamado">' + (o.chamado || '—') + '</td>'
+      + celulaChamados(o.chamado)
       + celulaSit(o.chamado)
       + '<td class="dd-oc-val">' + fmtD(o.perda) + '</td>'
       + '</tr>';
