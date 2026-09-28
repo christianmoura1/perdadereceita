@@ -2326,12 +2326,16 @@ function openDrillDown(reg, diaISO, diaLabel) {
 
   var catsArr  = (p.cats  || []).slice(0, 10);
   var lojasArr = (p.lojas || []).slice(0, 10);
+  var mapaOcsDia = ocsPorLoja(p.ocs || []);
+  window.__txtLojasDia = textoWhatsLojas("PERDA DE RECEITA - TOP LOJAS DO DIA", (p.rotulo || ""), lojasArr, mapaOcsDia, p.total || 0);
   var lojasHTML = lojasArr.map(function(l, i) {
     var pct = p.total > 0 ? (l.perda/p.total*100).toFixed(1)+'%' : '—';
     var barPct = p.total > 0 ? Math.min(100, l.perda/p.total*100) : 0;
+    var stLoja = statusLoja(mapaOcsDia[l.nome]);
     return '<div class="dd-cat-row">'
       + '<span class="dd-cat-rank">' + (i+1) + '</span>'
       + '<span class="dd-cat-nome" title="' + l.nome + '">' + l.nome + '</span>'
+      + pillLoja(stLoja)
       + '<div class="dd-cat-bar-wrap"><div class="dd-cat-bar" style="width:' + barPct + '%"></div></div>'
       + '<span class="dd-cat-val">' + fmtDk(l.perda) + '</span>'
       + '<span class="dd-cat-pct">' + pct + '</span>'
@@ -2359,7 +2363,7 @@ function openDrillDown(reg, diaISO, diaLabel) {
   bodyEl.innerHTML = headerHTML + chartsHTML
     + '<div class="dd-two-col">'
       + '<div class="dd-col"><h4>Top Lojas do Dia'
-        + '<button class="btn-zap" onclick="window.__copiarLojas(this, window.__txtLojasPer || \'\')">Copiar p/ WhatsApp</button>'
+        + '<button class="btn-zap" onclick="window.__copiarLojas(this, window.__txtLojasDia || window.__txtLojasPer || \'\')">Copiar p/ WhatsApp</button>'
         + '</h4>' + (lojasHTML || '<p class="dd-empty">Sem dados.</p>') + '</div>'
       + '<div class="dd-chart-box"><h4>Top Categorias do Dia</h4>'
         + (catsArr.length ? '<div class="dd-chart-canvas cats"><canvas id="dd-ch-cats"></canvas></div>' : '<p class="dd-empty">Sem dados.</p>')
