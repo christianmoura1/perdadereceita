@@ -1034,6 +1034,18 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   .dd-two-col { grid-template-columns: 1fr; }
   .dd-oc-loja { max-width: 120px; }
 }
+
+/* ---- status da loja no Top Lojas + botao de WhatsApp ---- */
+.lj-pill { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+  margin-left: 8px; white-space: nowrap; letter-spacing: .02em; }
+.lj-ab { background: #fee2e2; color: #991b1b; }
+.lj-ok { background: #dcfce7; color: #166534; }
+.lj-nd { background: #f1f5f9; color: #64748b; }
+.btn-zap { float: right; font-size: 11px; font-weight: 600; cursor: pointer;
+  border: 1px solid #cbd5e1; background: #fff; color: #334155;
+  border-radius: 6px; padding: 3px 10px; margin-left: 10px; }
+.btn-zap:hover { background: #f1f5f9; border-color: #94a3b8; }
+.btn-zap.copiado { background: #dcfce7; border-color: #86efac; color: #166534; }
 </style>
 </head>
 <body>
@@ -1338,6 +1350,88 @@ function celulaChamados(txt) {
   }).join('');
   return '<td class="dd-oc-chamado">' + chips + '</td>';
 }
+
+// ---- status da LOJA: se algum chamado dela ainda esta aberto hoje, ela
+// continua perdendo receita. Regra dada pelo Christian em 28/09/2026.
+function statusLoja(ocs) {
+  var abertos = [], perdaAb = 0, temInfo = false;
+  (ocs || []).forEach(function(o) {
+    var ns = chamadosDe(o.chamado);
+    if (!ns.length) return;
+    var fatia = (o.perda || 0) / ns.length;
+    ns.forEach(function(n) {
+      var st = STATUS_CH ? STATUS_CH[n] : null;
+      if (!st) return;
+      temInfo = true;
+      if (st.aberto) {
+        if (abertos.indexOf(n) < 0) abertos.push(n);
+        perdaAb += fatia;
+      }
+    });
+  });
+  if (!temInfo) return { cls: 'lj-nd', txt: '\u2014', tit: 'sem informacao do SOMA', aberto: false, n: 0, perdaAb: 0 };
+  if (abertos.length) return {
+    cls: 'lj-ab', txt: 'perdendo', aberto: true, n: abertos.length, perdaAb: perdaAb,
+    tit: abertos.length + ' chamado(s) ainda aberto(s): ' + abertos.join(', ')
+  };
+  return { cls: 'lj-ok', txt: 'resolvido', aberto: false, n: 0, perdaAb: 0, tit: 'todos os chamados desta loja estao encerrados' };
+}
+function pillLoja(st) {
+  if (!st) return '';
+  return '<span class="lj-pill ' + st.cls + '" title="' + String(st.tit).replace(/"/g, '') + '">' + st.txt + '</span>';
+}
+// agrupa ocorrencias por nome de loja
+function ocsPorLoja(lista) {
+  var m = {};
+  (lista || []).forEach(function(o) {
+    var k = o.loja || '';
+    if (!m[k]) m[k] = [];
+    m[k].push(o);
+  });
+  return m;
+}
+// ---- texto para o WhatsApp do Top Lojas ----
+function textoWhatsLojas(titulo, periodo, lojas, mapaOcs, total) {
+  var L = [];
+  L.push('*' + titulo + '*');
+  if (periodo) L.push('_' + periodo + '_');
+  L.push('');
+  var aindaPerdendo = 0;
+  lojas.forEach(function(l, i) {
+    var st = mapaOcs ? statusLoja(mapaOcs[l.nome]) : null;
+    var marca = '';
+    if (st && st.aberto) { marca = ' \u26A0 ainda perdendo'; aindaPerdendo++; }
+    else if (st && st.cls === 'lj-ok') marca = ' \u2713 resolvido';
+    var pct = total > 0 ? ' (' + (l.perda / total * 100).toFixed(1) + '%)' : '';
+    L.push((i + 1) + '. *' + l.nome + '* \u2014 ' + fmtD(l.perda) + pct + marca);
+  });
+  L.push('');
+  L.push('*Total: ' + fmtD(total) + '*');
+  if (aindaPerdendo) L.push('_' + aindaPerdendo + ' loja(s) com chamado ainda aberto_');
+  return L.join('\n');
+}
+function copiarLojas(btn, texto) {
+  function ok() {
+    var antes = btn.textContent;
+    btn.textContent = 'Copiado';
+    btn.classList.add('copiado');
+    setTimeout(function() { btn.textContent = antes; btn.classList.remove('copiado'); }, 1800);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(ok, function() { fallback(); });
+  } else { fallback(); }
+  function fallback() {
+    var ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); ok(); } catch (e) { /* nada */ }
+    document.body.removeChild(ta);
+  }
+}
+window.__copiarLojas = copiarLojas;
 
 function resumoSit(lista) {
   var ab = 0, fe = 0, nd = 0, perdaAb = 0;
@@ -1952,7 +2046,7 @@ function renderTotalDetalhe() {
   rows += '<tr class="total-row"><td>Total</td><td class="num">'+fmtR(totalAcum)+'</td><td class="num">'+fmtR(meta*diasN)+'</td><td class="num"><span class="'+(deltaTotal>0?'delta-neg':'delta-pos')+'">'+(deltaTotal>0?'+':'')+fmtR(deltaTotal)+'</span></td></tr>';
 
   // Agregar detAgg de todas as regionais em um único total Brasil
-  var agg = { totalPerda: 0, oc: 0, lojas: {}, cats: {}, porDia: {} };
+  var agg = { totalPerda: 0, oc: 0, lojas: {}, cats: {}, porDia: {}, ocs: [] };
   var temDetalhe = false;
   mesNames.forEach(function(reg) {
     var d = detAgg && detAgg[reg];
@@ -1975,6 +2069,7 @@ function renderTotalDetalhe() {
     Object.keys(d.porDia || {}).forEach(function(k) {
       if (!agg.porDia[k]) agg.porDia[k] = 0;
       agg.porDia[k] += d.porDia[k].total;
+      (d.porDia[k].ocs || []).forEach(function(o) { agg.ocs.push(o); });
     });
   });
 
@@ -1989,12 +2084,16 @@ function renderTotalDetalhe() {
     var periodo = periodoMin ? periodoMin + ' – ' + periodoMax : '';
 
     var topLojas = lojasOrd.slice(0, 10);
+    var mapaOcsMes = ocsPorLoja(agg.ocs);
+    window.__txtLojasMes = textoWhatsLojas("PERDA DE RECEITA - TOP LOJAS", periodo, topLojas, mapaOcsMes, agg.totalPerda);
     var lojasHTML = topLojas.map(function(l, i) {
+      var stLoja = statusLoja(mapaOcsMes[l.nome]);
       var pct = agg.totalPerda > 0 ? (l.perda / agg.totalPerda * 100).toFixed(1) + '%' : '—';
       var cor = i === 0 ? '#991b1b' : i <= 2 ? '#b45309' : '#334155';
       return '<div class="det-loja-row">'
         + '<span class="det-rank">' + (i+1) + '</span>'
         + '<span class="det-nome" style="color:' + cor + '" title="' + l.nome + '">' + l.nome + '</span>'
+        + pillLoja(stLoja)
         + '<span class="det-val">' + fmtDk(l.perda) + '</span>'
         + '<span class="det-pct">' + pct + '</span>'
         + '</div>';
@@ -2083,13 +2182,17 @@ function renderDetalhe(reg) {
 
   // Top 10 lojas
   var topLojas = d.lojas.slice(0, 10);
+  var mapaOcsPer = ocsPorLoja(d.ocs || []);
+  window.__txtLojasPer = textoWhatsLojas("PERDA DE RECEITA - TOP LOJAS", periodo, topLojas, mapaOcsPer, d.totalPerda);
   var lojasHTML = topLojas.map(function(l, i) {
+    var stLoja = statusLoja(mapaOcsPer[l.nome]);
     var pct = d.totalPerda > 0 ? (l.perda / d.totalPerda * 100).toFixed(1) + '%' : '—';
     var cor = i === 0 ? '#991b1b' : i <= 2 ? '#b45309' : '#334155';
     return '<div class="det-loja-row">'
       + '<span class="det-rank">' + (i+1) + '</span>'
       + '<span class="det-nome" style="color:' + cor + '" title="' + l.nome + '">' + l.nome + '</span>'
-      + '<span class="det-val">' + fmtDk(l.perda) + '</span>'
+      + pillLoja(stLoja)
+        + '<span class="det-val">' + fmtDk(l.perda) + '</span>'
       + '<span class="det-pct">' + pct + '</span>'
       + '</div>';
   }).join('');
@@ -2255,7 +2358,9 @@ function openDrillDown(reg, diaISO, diaLabel) {
 
   bodyEl.innerHTML = headerHTML + chartsHTML
     + '<div class="dd-two-col">'
-      + '<div class="dd-col"><h4>Top Lojas do Dia</h4>' + (lojasHTML || '<p class="dd-empty">Sem dados.</p>') + '</div>'
+      + '<div class="dd-col"><h4>Top Lojas do Dia'
+        + '<button class="btn-zap" onclick="window.__copiarLojas(this, window.__txtLojasPer || \'\')">Copiar p/ WhatsApp</button>'
+        + '</h4>' + (lojasHTML || '<p class="dd-empty">Sem dados.</p>') + '</div>'
       + '<div class="dd-chart-box"><h4>Top Categorias do Dia</h4>'
         + (catsArr.length ? '<div class="dd-chart-canvas cats"><canvas id="dd-ch-cats"></canvas></div>' : '<p class="dd-empty">Sem dados.</p>')
       + '</div>'
