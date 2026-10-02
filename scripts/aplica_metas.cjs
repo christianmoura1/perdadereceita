@@ -123,7 +123,9 @@ for (const l of linhas) {
 }
 m.metaDiaBrasil = sDia;
 
-const bkp = CAMINHO + '.antes-metas-' + cfg.ano + '-' + String(cfg.mes).padStart(2, '0');
+const dirBkp = RAIZ + '/_backups';
+fs.mkdirSync(dirBkp, { recursive: true });
+const bkp = dirBkp + '/dados.json.antes-metas-' + cfg.ano + '-' + String(cfg.mes).padStart(2, '0');
 fs.copyFileSync(CAMINHO, bkp);
 fs.writeFileSync(CAMINHO, JSON.stringify(dados, null, 2), 'utf8');
 console.log('');

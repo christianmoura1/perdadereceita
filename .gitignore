@@ -22,3 +22,5 @@ comentario.txt
 diag_*.png
 *.log
 *.err
+_backups/
+data/*.antes-metas-*
