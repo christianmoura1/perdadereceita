@@ -1,0 +1,22 @@
+{
+  "_comentario": "Metas mensais de Perda de Receita. A coluna 'Meta' do print do BI/planilha corporativa e a Proj. Venda do mes (projVenda). O objetivo de perda sai dela: objMes = projVenda * fator, objDia = objMes / diasNoMes.",
+  "mes": 10,
+  "ano": 2026,
+  "fator": 0.0074,
+  "fonte": "print da tabela REGIONAL | Venda | Meta passado pelo Christian em 02/10/2026",
+  "projVenda": {
+    "SP INTERIOR SUL": 34936163,
+    "SP SUL": 41035384,
+    "BK É FOGO LESTE": 56393947,
+    "SP INTERIOR NORTE": 38538584,
+    "BK É FOGO NORTE": 27107718,
+    "SUL": 40402425,
+    "CENTRO OESTE": 42602820,
+    "BK É FOGO CENTRO LITORAL": 17861217,
+    "NE": 62469571,
+    "RJ": 49872547,
+    "MINAS BAHIA": 42008208
+  },
+  "totalConferencia": 453228584,
+  "rest": null
+}
