@@ -1086,6 +1086,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
         <button class="view-btn" id="btn-mensal" onclick="setView('mensal')" role="tab" aria-selected="false" aria-controls="view-mensal" tabindex="-1">Comparativo ano -1</button>
         <button class="view-btn active" id="btn-atual" onclick="setView('atual')" role="tab" aria-selected="true" aria-controls="view-atual" tabindex="0">MTD</button>
         <button class="view-btn" id="btn-hist" onclick="setView('hist')" role="tab" aria-selected="false" aria-controls="view-hist" tabindex="-1">Hist&oacute;rico</button>
+        <button class="view-btn" id="btn-abertos" onclick="setView('abertos')" role="tab" aria-selected="false" aria-controls="view-abertos" tabindex="-1">Chamados Abertos</button>
       </nav>
 
       <div class="sidebar-meta">
@@ -1200,6 +1201,40 @@ button:focus-visible, input:focus-visible, a:focus-visible {
     <div id="hist-mes-panels"></div>
   </div>
 
+  <div class="view" id="view-abertos" role="tabpanel" aria-labelledby="btn-abertos" hidden>
+    <div class="section-divider"><h2>Chamados Abertos com Perda de Receita</h2></div>
+    <div style="margin-bottom:16px;padding:16px 20px;background:#fff;border:1px solid var(--border);border-radius:var(--r-md);">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="abertos-busca" placeholder="Buscar por chamado, loja ou regional..." style="flex:1;min-width:200px;padding:8px 14px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:.9rem;font-family:inherit;">
+        <select id="abertos-filtro-regional" style="padding:8px 14px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:.9rem;font-family:inherit;background:#fff;">
+          <option value="">Todas as Regionais</option>
+        </select>
+        <span id="abertos-contador" style="font-size:.85rem;color:var(--text-dim);white-space:nowrap;"></span>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="tabela-resumo" id="tabela-abertos">
+        <colgroup>
+          <col style="width:10%"><col style="width:12%"><col style="width:8%"><col style="width:25%">
+          <col style="width:10%"><col style="width:10%"><col style="width:12%"><col style="width:13%">
+        </colgroup>
+        <thead><tr>
+          <th>Chamado</th>
+          <th>Regional</th>
+          <th>Data</th>
+          <th>Loja</th>
+          <th class="num">Perda (R$)</th>
+          <th>Estado</th>
+          <th>Fase</th>
+          <th>Abertura</th>
+        </tr></thead>
+        <tbody id="tbody-abertos">
+          <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-dim);">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
       </div><!-- /.dash-content -->
     </div><!-- /.main-area -->
   </div><!-- /.app-shell -->
@@ -1276,7 +1311,85 @@ function setView(v) {
     }, 100);
   }
   if (v === 'hist') renderHistorico();
+  if (v === 'abertos') renderAbertos();
 }
+
+var dadosAbertos = null;
+async function renderAbertos() {
+  var tbody = document.getElementById('tbody-abertos');
+  var contador = document.getElementById('abertos-contador');
+  var filtroReg = document.getElementById('abertos-filtro-regional');
+  var busca = document.getElementById('abertos-busca');
+  if (!dadosAbertos) {
+    try {
+      var resp = await fetch('/api/data?file=chamados-abertos-perda');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      dadosAbertos = await resp.json();
+    } catch(e) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--danger);">Erro ao carregar chamados abertos.</td></tr>';
+      console.error('renderAbertos fetch erro:', e);
+      return;
+    }
+  }
+  // Popular filtro de regional se vazio
+  if (filtroReg.options.length <= 1) {
+    var regs = [...new Set(dadosAbertos.map(function(x){ return x.regional; }))].sort();
+    regs.forEach(function(r){
+      var opt = document.createElement('option');
+      opt.value = r; opt.textContent = r;
+      filtroReg.appendChild(opt);
+    });
+  }
+  aplicarFiltrosAbertos();
+}
+
+function aplicarFiltrosAbertos() {
+  if (!dadosAbertos) return;
+  var tbody = document.getElementById('tbody-abertos');
+  var contador = document.getElementById('abertos-contador');
+  var filtroReg = document.getElementById('abertos-filtro-regional');
+  var busca = (document.getElementById('abertos-busca').value || '').toLowerCase().trim();
+  var regSel = filtroReg.value;
+  var filtrados = dadosAbertos.filter(function(x){
+    if (regSel && x.regional !== regSel) return false;
+    if (busca) {
+      var haystack = [x.chamado, x.loja, x.regional, x.estado, x.descricao].join(' ').toLowerCase();
+      if (haystack.indexOf(busca) === -1) return false;
+    }
+    return true;
+  });
+  contador.textContent = filtrados.length + ' de ' + dadosAbertos.length + ' chamados';
+  if (filtrados.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-dim);">Nenhum chamado encontrado.</td></tr>';
+    return;
+  }
+  var html = '';
+  filtrados.forEach(function(x){
+    var perdaFmt = x.perda != null ? fmtR(x.perda) : '—';
+    var estadoCls = '';
+    if (x.estado && x.estado.toLowerCase().indexOf('expedi') !== -1) estadoCls = 'st-amarelo';
+    else if (x.estado && x.estado.toLowerCase().indexOf('andamento') !== -1) estadoCls = 'st-roxo';
+    html += '<tr>' +
+      '<td><strong>' + (x.chamado||'') + '</strong></td>' +
+      '<td>' + (x.regional||'') + '</td>' +
+      '<td>' + (x.data ? x.data.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3/$2/$1') : '') + '</td>' +
+      '<td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (x.loja||'').replace(/"/g,'&quot;') + '">' + (x.loja||'') + '</td>' +
+      '<td class="num"><strong>' + perdaFmt + '</strong></td>' +
+      '<td>' + (estadoCls ? '<span class="'+estadoCls+'">'+(x.estado||'')+'</span>' : (x.estado||'')) + '</td>' +
+      '<td>' + (x.fase||'') + '</td>' +
+      '<td style="font-size:.8rem;color:var(--text-dim);">' + (x.abertura||'') + '</td>' +
+      '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+// Bind filtros da aba abertos (idempotente)
+(function(){
+  var b = document.getElementById('abertos-busca');
+  var f = document.getElementById('abertos-filtro-regional');
+  if (b && !b._boundAbertos) { b.addEventListener('input', aplicarFiltrosAbertos); b._boundAbertos = true; }
+  if (f && !f._boundAbertos) { f.addEventListener('change', aplicarFiltrosAbertos); f._boundAbertos = true; }
+})();
 
 var gridColor = '#e8eaf2', tickColor = '#9096b0';
 var baseOpts = {

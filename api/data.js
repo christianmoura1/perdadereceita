@@ -6,6 +6,7 @@ const FILES = {
   dados: 'dados.json',
   detalhe: 'detalhe-mes.json',
   status: 'chamados-status.json',
+  abertos: 'chamados-abertos-perda.json',
 };
 
 module.exports = function handler(req, res) {
