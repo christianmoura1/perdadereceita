@@ -1,14 +1,14 @@
 {
- "geradoEm": "2026-10-12T14:42:44.469Z",
+ "geradoEm": "2026-10-13T02:34:14.136Z",
  "total": 976,
  "encontrados": 976,
- "abertos": 164,
- "fechados": 812,
+ "abertos": 149,
+ "fechados": 827,
  "estados": {
-  "Encerrado concluído": 802,
-  "Trabalho em andamento": 31,
-  "Pronto para Expedição": 132,
-  "Cancelada": 10,
+  "Encerrado concluído": 815,
+  "Trabalho em andamento": 29,
+  "Pronto para Expedição": 119,
+  "Cancelada": 12,
   "Atribuído": 1
  },
  "mapa": {
@@ -2323,11 +2323,11 @@
    "fechamento": "09/10/2026 14:27:54"
   },
   "WO0066465": {
-   "estado": "Trabalho em andamento",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "08/10/2026 16:09:12",
-   "fechamento": ""
+   "fechamento": "12/10/2026 12:47:16"
   },
   "WO0066504": {
    "estado": "Encerrado concluído",
@@ -2918,11 +2918,11 @@
    "fechamento": "08/10/2026 18:14:20"
   },
   "WO0065602": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "06/10/2026 21:42:39",
-   "fechamento": ""
+   "fechamento": "12/10/2026 14:01:49"
   },
   "WO0065618": {
    "estado": "Encerrado concluído",
@@ -3191,11 +3191,11 @@
    "fechamento": "11/10/2026 16:47:44"
   },
   "WO0067280": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "10/10/2026 14:13:28",
-   "fechamento": ""
+   "fechamento": "12/10/2026 14:04:18"
   },
   "WO0067284": {
    "estado": "Encerrado concluído",
@@ -3275,11 +3275,11 @@
    "fechamento": ""
   },
   "WO0067436": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Cancelada",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "10/10/2026 19:56:50",
-   "fechamento": ""
+   "fechamento": "12/10/2026 13:08:29"
   },
   "WO0067446": {
    "estado": "Pronto para Expedição",
@@ -3317,11 +3317,11 @@
    "fechamento": ""
   },
   "WO0067575": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Cancelada",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "11/10/2026 10:43:44",
-   "fechamento": ""
+   "fechamento": "12/10/2026 14:35:51"
   },
   "WO0067583": {
    "estado": "Encerrado concluído",
@@ -3723,11 +3723,11 @@
    "fechamento": "03/10/2026 20:25:27"
   },
   "WO0063411": {
-   "estado": "Trabalho em andamento",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "01/10/2026 17:28:57",
-   "fechamento": ""
+   "fechamento": "12/10/2026 14:39:09"
   },
   "WO0063442": {
    "estado": "Encerrado concluído",
@@ -4199,18 +4199,18 @@
    "fechamento": "11/10/2026 16:46:37"
   },
   "WO0067742": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "11/10/2026 17:28:44",
-   "fechamento": ""
+   "fechamento": "12/10/2026 12:41:14"
   },
   "WO0067811": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "11/10/2026 21:28:41",
-   "fechamento": ""
+   "fechamento": "12/10/2026 17:18:12"
   },
   "WO0023558": {
    "estado": "Encerrado concluído",
@@ -4444,11 +4444,11 @@
    "fechamento": "04/10/2026 15:39:06"
   },
   "WO0064471": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "04/10/2026 11:27:55",
-   "fechamento": ""
+   "fechamento": "12/10/2026 16:27:22"
   },
   "WO0064476": {
    "estado": "Pronto para Expedição",
@@ -4507,11 +4507,11 @@
    "fechamento": "09/10/2026 14:53:18"
   },
   "WO0064772": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "05/10/2026 09:53:30",
-   "fechamento": ""
+   "fechamento": "12/10/2026 16:27:59"
   },
   "WO0064785": {
    "estado": "Pronto para Expedição",
@@ -5032,11 +5032,11 @@
    "fechamento": ""
   },
   "WO0067526": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "11/10/2026 09:56:17",
-   "fechamento": ""
+   "fechamento": "12/10/2026 15:36:51"
   },
   "WO0067557": {
    "estado": "Pronto para Expedição",
@@ -5284,11 +5284,11 @@
    "fechamento": "03/10/2026 09:35:32"
   },
   "WO0063451": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "01/10/2026 19:52:38",
-   "fechamento": ""
+   "fechamento": "12/10/2026 14:21:42"
   },
   "WO0063459": {
    "estado": "Encerrado concluído",
@@ -5347,11 +5347,11 @@
    "fechamento": ""
   },
   "WO0064016": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "02/10/2026 23:24:58",
-   "fechamento": ""
+   "fechamento": "12/10/2026 14:20:08"
   },
   "WO0064018": {
    "estado": "Pronto para Expedição",
@@ -5872,11 +5872,11 @@
    "fechamento": "12/10/2026 08:29:50"
   },
   "WO0067814": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "11/10/2026 21:40:34",
-   "fechamento": ""
+   "fechamento": "12/10/2026 17:28:34"
   },
   "WO0067832": {
    "estado": "Encerrado concluído",
@@ -6684,11 +6684,11 @@
    "fechamento": "11/10/2026 10:51:37"
   },
   "WO0067463": {
-   "estado": "Pronto para Expedição",
-   "aberto": true,
+   "estado": "Encerrado concluído",
+   "aberto": false,
    "fase": "Iniciado",
    "abertura": "10/10/2026 22:42:42",
-   "fechamento": ""
+   "fechamento": "12/10/2026 13:47:47"
   },
   "WO0067465": {
    "estado": "Encerrado concluído",
