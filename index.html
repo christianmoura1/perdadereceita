@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -1322,7 +1322,7 @@ async function renderAbertos() {
   var busca = document.getElementById('abertos-busca');
   if (!dadosAbertos) {
     try {
-      var resp = await fetch('/api/data?file=chamados-abertos-perda');
+      var resp = await fetch('/api/data?file=chamados-abertos-perda&t=' + Date.now());
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       dadosAbertos = await resp.json();
     } catch(e) {
@@ -1612,7 +1612,7 @@ var dadosProntos = null, detAggPronto = null;
 
 function carregarDados() {
   if (dadosProntos) return dadosProntos;
-  dadosProntos = fetch('/api/data?file=dados', { credentials: 'same-origin' }).then(function(r){
+  dadosProntos = fetch('/api/data?file=dados&t=' + Date.now(), { credentials: 'same-origin' }).then(function(r){
     if (!r.ok) throw new Error('Dados indisponíveis (' + r.status + ')');
     return r.json();
   }).then(function(d) {
@@ -1634,12 +1634,12 @@ function carregarDados() {
 
 // Detalhamento (1MB+) baixa em segundo plano — o painel abre sem esperar por ele
   detAggPronto = Promise.all([
-    fetch('/api/data?file=detalhe', { credentials: 'same-origin' }).then(function(r){
+    fetch('/api/data?file=detalhe&t=' + Date.now(), { credentials: 'same-origin' }).then(function(r){
       if (!r.ok) throw new Error('Detalhamento indisponível (' + r.status + ')');
       return r.json();
     }),
     // situacao dos chamados no SOMA; se faltar, o painel abre igual e mostra "—"
-    fetch('/api/data?file=status', { credentials: 'same-origin' })
+    fetch('/api/data?file=status&t=' + Date.now(), { credentials: 'same-origin' })
       .then(function(r){ return r.ok ? r.json() : null; })
       .catch(function(){ return null; })
   ]).then(function(res) {
