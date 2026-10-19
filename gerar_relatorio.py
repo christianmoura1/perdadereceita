@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 MES_NOMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-LABEL = {"SP CENTRO LITORAL": "BK É FOGO CENTRO LITORAL"}
+LABEL = {"SP CENTRO LITORAL": "BK É FOGO CENTRO LITORAL", "SP SUL": "BK É FOGO SP SUL"}
 
 # Faixas iguais às do index.html (função badge). O corte de Atenção é 0,90,
 # não os 0,99 que a legenda do site anuncia.

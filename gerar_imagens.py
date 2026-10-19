@@ -24,7 +24,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent
 MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-LABEL = {"SP CENTRO LITORAL": "BK É FOGO CENTRO LITORAL"}
+LABEL = {"SP CENTRO LITORAL": "BK É FOGO CENTRO LITORAL", "SP SUL": "BK É FOGO SP SUL"}
 
 S = 2  # escala de render
 NAVY = (0, 17, 102)
